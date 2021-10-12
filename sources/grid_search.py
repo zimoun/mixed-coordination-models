@@ -949,7 +949,7 @@ def plot_all_perfs(directory, size_plot=10, relative=True, mode="geerts"):
 
     ax1.set_title("Pearce")
     ax2.set_title("Rodrigo")
-    ax3.set_title("Pearce * Rodrigo")
+    ax3.set_title("Pearce + Rodrigo")
 
     plt.show()
 
@@ -972,7 +972,18 @@ def plot_all_perfs(directory, size_plot=10, relative=True, mode="geerts"):
 
 
 def plot_local(expe, df, indi, relative=True):
+    """
+        Display the mean performance of a cluster of 100 agents on a specific task
 
+        :param df: A DataFrame containing the data of all agents simulated during the grid-search, and which validated some statistical tests
+        :type df: pandas DataFrame
+        :param indi: Index of the cluster in df
+        :type indi: int
+        :param relative: Whether the MSE is computed using absolute or relative experimental data reference
+        :type relative: boolean
+
+        :returns: Nothing, but display a matplotlib object
+    """
     if expe == "main_pearce":
 
         c1 = get_array_from_str(df.loc[indi]["se_cluster_100_pearce_control1"])
@@ -987,7 +998,7 @@ def plot_local(expe, df, indi, relative=True):
         gamma = round(df.loc[indi]["gamma_centroid"], 3)
         eta = round(df.loc[indi]["eta_centroid"], 3)
         inv_temp = round(df.loc[indi]["inv_temp_centroid"], 3)
-        fig.suptitle('Awaited results for the following parameters      SRLR:'+str(srlr)+"      QLR:"+str(qlr)+"     GAMMA:"+str(gamma)+"      INV_TEMP:"+str(inv_temp), fontweight="bold")
+        fig.suptitle('Awaited results for the following parameters      SRLR:'+str(srlr)+"      QLR:"+str(qlr)+"     GAMMA:"+str(gamma)+"      INV_TEMP:"+str(inv_temp)+"      ETA:"+str(eta), fontweight="bold")
 
         axs[0].set(title="Original results")
         axs[0].imshow(mpimg.imread("../images/results_pearce.jpg"))

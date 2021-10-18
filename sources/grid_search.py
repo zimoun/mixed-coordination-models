@@ -295,7 +295,7 @@ def compute_clusters_perfs(directory, size_cluster, experimental_data_pearce=Non
         raise Exception("At least one set of experimental data must be provided")
 
     if experimental_data_pearce is not None:
-        df_pearce = pd.read_csv("../results/"+directory+"/mean_square_pearce.csv")
+        df_pearce = pd.read_csv("../results/"+directory+"/mean_square_pearce_noPFC.csv")
     if experimental_data_rodrigo is not None:
         df_rodrigo = pd.read_csv("../results/"+directory+"/mean_square_rodrigo.csv")
 
@@ -804,7 +804,7 @@ def plot_two_perfs(directory, expe="pearce", size_plot=10, relative=True, mode="
         validated all statistical tests) generated during the grid-search
     """
 
-    res_df = pd.read_csv("../results/"+directory+"/mean_square_processed.csv")
+    res_df = pd.read_csv("../saved_results/"+directory+"/mean_square_processed.csv")
     # plot only two dimensions, srlr and eta are parameters specific to respectively the geerts and dolle models
     if mode == "geerts":
         _,data1,bin12,bin11 = plot_single_perfs(res_df, size_plot, "inv_temp", "srlr", expe, relative)
@@ -893,30 +893,30 @@ def plot_all_perfs(directory, size_plot=10, relative=True, mode="geerts"):
         :returns: A pandas DataFrame containing all the datapoints generated during the grid-search (parameters value, MSE, ...)
     """
 
-    res_df = pd.read_csv("../results/"+directory+"/mean_square_processed.csv")
+    res_df = pd.read_csv("../saved_results/"+directory+"/mean_square_processed.csv")
 
     if mode == "geerts":
-        _,data1,bin12,bin11 = plot_single_perfs(res_df, size_plot, "inv_temp", "srlr", "pearce", relative)
+        df_pearce,data1,bin12,bin11 = plot_single_perfs(res_df, size_plot, "inv_temp", "srlr", "pearce", relative)
         _,data4,bin42,bin41 = plot_single_perfs(res_df, size_plot, "qlr", "gamma", "pearce", relative)
 
-        _,data2,bin22,bin21 = plot_single_perfs(res_df, size_plot, "inv_temp", "srlr", "rodrigo", relative)
+        df_rodrigo,data2,bin22,bin21 = plot_single_perfs(res_df, size_plot, "inv_temp", "srlr", "rodrigo", relative)
         _,data5,bin52,bin51 = plot_single_perfs(res_df, size_plot, "qlr", "gamma", "rodrigo", relative)
 
-        _,data3,bin32,bin31 = plot_single_perfs(res_df, size_plot, "inv_temp", "srlr", "product", relative)
-        _,data6,bin62,bin61 = plot_single_perfs(res_df, size_plot, "qlr", "gamma", "product", relative)
+        #_,data3,bin32,bin31 = plot_single_perfs(res_df, size_plot, "inv_temp", "srlr", "product", relative)
+        #_,data6,bin62,bin61 = plot_single_perfs(res_df, size_plot, "qlr", "gamma", "product", relative)
     elif mode == "dolle":
-        _,data1,bin12,bin11 = plot_single_perfs(res_df, size_plot, "inv_temp", "eta", "pearce", relative)
+        df_pearce,data1,bin12,bin11 = plot_single_perfs(res_df, size_plot, "inv_temp", "eta", "pearce", relative)
         _,data4,bin42,bin41 = plot_single_perfs(res_df, size_plot, "qlr", "gamma", "pearce", relative)
 
-        _,data2,bin22,bin21 = plot_single_perfs(res_df, size_plot, "inv_temp", "eta", "rodrigo", relative)
+        df_rodrigo,data2,bin22,bin21 = plot_single_perfs(res_df, size_plot, "inv_temp", "eta", "rodrigo", relative)
         _,data5,bin52,bin51 = plot_single_perfs(res_df, size_plot, "qlr", "gamma", "rodrigo", relative)
 
-        _,data3,bin32,bin31 = plot_single_perfs(res_df, size_plot, "inv_temp", "eta", "product", relative)
-        _,data6,bin62,bin61 = plot_single_perfs(res_df, size_plot, "qlr", "gamma", "product", relative)
+        #_,data3,bin32,bin31 = plot_single_perfs(res_df, size_plot, "inv_temp", "eta", "product", relative)
+        #_,data6,bin62,bin61 = plot_single_perfs(res_df, size_plot, "qlr", "gamma", "product", relative)
     else:
         raise Exception("Mode should be either geerts or dolle")
 
-    fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(16, 9))
+    fig, ((ax1, ax2), (ax4, ax5)) = plt.subplots(2, 2, figsize=(10, 8))
 
     # to retrieve matplotlib objects so each heatmap can be integrated in a subplot
     def plot_heatmap(ax, data, bin2, bin1):
@@ -929,11 +929,13 @@ def plot_all_perfs(directory, size_plot=10, relative=True, mode="geerts"):
 
     plot1 = plot_heatmap(ax1, data1, bin12, bin11)
     plot2 = plot_heatmap(ax2, data2, bin22, bin21)
-    plot3 = plot_heatmap(ax3, data3, bin32, bin31)
+    #plot3 = plot_heatmap(ax3, data3, bin32, bin31)
     plot4 = plot_heatmap(ax4, data4, bin42, bin41)
     plot5 = plot_heatmap(ax5, data5, bin52, bin51)
-    plot6 = plot_heatmap(ax6, data6, bin62, bin61)
+    #plot6 = plot_heatmap(ax6, data6, bin62, bin61)
 
+    ax1.set_xlabel('Inverse temperature')
+    ax4.set_xlabel('MF learning rate')
     ax2.set_xlabel('Inverse temperature')
     ax5.set_xlabel('MF learning rate')
     ax1.set_ylabel('SR learning rate')
@@ -941,32 +943,51 @@ def plot_all_perfs(directory, size_plot=10, relative=True, mode="geerts"):
 
     fig.suptitle("Lowest square error per bin, all dimensions considered")
     plt.colorbar(plot1, ax = ax1)
-    plt.colorbar(plot2, ax = ax2)
-    plt.colorbar(plot3, label="square error", ax = ax3)
+    plt.colorbar(plot2, label="square error", ax = ax2)
+    #plt.colorbar(plot3, label="square error", ax = ax3)
     plt.colorbar(plot4, ax = ax4)
-    plt.colorbar(plot5, ax = ax5)
-    plt.colorbar(plot6, label="square error", ax = ax6)
+    plt.colorbar(plot5, label="square error", ax = ax5)
+    #plt.colorbar(plot6, label="square error", ax = ax6)
 
     ax1.set_title("Pearce")
     ax2.set_title("Rodrigo")
-    ax3.set_title("Pearce + Rodrigo")
+    #ax3.set_title("Pearce + Rodrigo")
 
     plt.show()
 
+    print("Best three sets of parameters on Pearce's data")
+    df_pearce = res_df[res_df["index"].isin(df_pearce["index"])]
     if relative:
-        df_sorted = res_df.sort_values(by=["se_cluster_100_product_mean_relative"], ascending=True)
+        df_sorted = df_pearce.sort_values(by=["se_cluster_100_pearce_mean"], ascending=True)
         df_sorted["se_cluster_pearce"] = df_sorted["se_cluster_100_pearce_mean"]
         df_sorted["se_cluster_rodrigo_relative"] = df_sorted["se_cluster_100_rodrigo_mean_relative"]
-        df_sorted["se_cluster_product_relative"] = df_sorted["se_cluster_100_product_mean_relative"]
+        #df_sorted["se_cluster_product_relative"] = df_sorted["se_cluster_100_product_mean_relative"]
         # display the three first datapoint with lowest product MSE
-        display(HTML(df_sorted[["srlr_centroid", "qlr_centroid", "gamma_centroid", "inv_temp_centroid", "eta_centroid", "se_cluster_pearce", "se_cluster_rodrigo_relative", "se_cluster_product_relative"]].head(3).to_html()))
+        display(HTML(df_sorted[["srlr_centroid", "qlr_centroid", "gamma_centroid", "inv_temp_centroid", "eta_centroid", "se_cluster_pearce", "se_cluster_rodrigo_relative"]].head(3).to_html()))
     else:
-        df_sorted = res_df.sort_values(by=["se_cluster_100_product_mean_absolute"], ascending=True)
+        df_sorted = df_pearce.sort_values(by=["se_cluster_100_pearce_mean"], ascending=True)
         df_sorted["se_cluster_pearce"] = df_sorted["se_cluster_100_pearce_mean"]
         df_sorted["se_cluster_rodrigo_absolute"] = df_sorted["se_cluster_100_rodrigo_mean_absolute"]
-        df_sorted["se_cluster_product_absolute"] = df_sorted["se_cluster_100_product_mean_absolute"]
+        #df_sorted["se_cluster_product_absolute"] = df_sorted["se_cluster_100_product_mean_absolute"]
         # display the three first datapoint with lowest product MSE
-        display(HTML(df_sorted[["srlr_centroid", "qlr_centroid", "gamma_centroid", "inv_temp_centroid", "eta_centroid", "se_cluster_pearce", "se_cluster_rodrigo_absolute", "se_cluster_product_absolute"]].head(3).to_html()))
+        display(HTML(df_sorted[["srlr_centroid", "qlr_centroid", "gamma_centroid", "inv_temp_centroid", "eta_centroid", "se_cluster_pearce", "se_cluster_rodrigo_absolute"]].head(3).to_html()))
+
+    print("Best three sets of parameters on Rodrigo's data")
+    df_rodrigo = res_df[res_df["index"].isin(df_rodrigo["index"])]
+    if relative:
+        df_sorted = df_rodrigo.sort_values(by=["se_cluster_100_rodrigo_mean_relative"], ascending=True)
+        df_sorted["se_cluster_pearce"] = df_sorted["se_cluster_100_pearce_mean"]
+        df_sorted["se_cluster_rodrigo_relative"] = df_sorted["se_cluster_100_rodrigo_mean_relative"]
+        #df_sorted["se_cluster_product_relative"] = df_sorted["se_cluster_100_product_mean_relative"]
+        # display the three first datapoint with lowest product MSE
+        display(HTML(df_sorted[["srlr_centroid", "qlr_centroid", "gamma_centroid", "inv_temp_centroid", "eta_centroid", "se_cluster_pearce", "se_cluster_rodrigo_relative"]].head(3).to_html()))
+    else:
+        df_sorted = df_rodrigo.sort_values(by=["se_cluster_100_rodrigo_mean_absolute"], ascending=True)
+        df_sorted["se_cluster_pearce"] = df_sorted["se_cluster_100_pearce_mean"]
+        df_sorted["se_cluster_rodrigo_absolute"] = df_sorted["se_cluster_100_rodrigo_mean_absolute"]
+        #df_sorted["se_cluster_product_absolute"] = df_sorted["se_cluster_100_product_mean_absolute"]
+        # display the three first datapoint with lowest product MSE
+        display(HTML(df_sorted[["srlr_centroid", "qlr_centroid", "gamma_centroid", "inv_temp_centroid", "eta_centroid", "se_cluster_pearce", "se_cluster_rodrigo_absolute"]].head(3).to_html()))
 
     return res_df
 

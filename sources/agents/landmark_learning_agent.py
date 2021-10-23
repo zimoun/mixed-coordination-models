@@ -1,11 +1,11 @@
-from agents.agent import Agent, AssociativeAgent
+from agents.agent import Agent, AssociativeAgent, FirstOrderAgent
 import numpy as np
 from itertools import product
 from scipy.stats import multivariate_normal
 import utils
 
 
-class LandmarkLearningAgent(Agent, AssociativeAgent):
+class LandmarkLearningAgent(Agent, AssociativeAgent, FirstOrderAgent):
 
     """Q learning agent using landmark features.
     """
@@ -27,48 +27,6 @@ class LandmarkLearningAgent(Agent, AssociativeAgent):
         self.weights = np.zeros((self.features.n_cells*2, self.env.nr_actions))
         self.last_observation = np.zeros(self.features.n_cells*2)
 
-    #
-    # def one_episode(self, time_limit):
-    #     self.env.reset()
-    #     t = 0
-    #     cumulative_reward = 0
-    #     s = self.env.get_current_state()
-    #     orientation = 30  # np.random.choice([30, 90, 150, 210, 270, 330])
-    #     f = self.get_feature_rep(s, orientation)
-    #     Q = self.weights.T @ f
-    #
-    #     results = pd.DataFrame({'time': [],
-    #                             'reward': [],
-    #                             'RPE': [],
-    #                             'reliability': [],
-    #                             'state': []})
-    #
-    #     while not self.env.is_terminal(s) and t < time_limit:
-    #         a = self.softmax_selection(s, Q)
-    #         allo_a = self.get_allo_action(a, orientation)
-    #         next_state, reward = self.env.act(allo_a)
-    #
-    #         orientation = self.get_orientation(s, next_state, orientation)
-    #
-    #         next_f = self.get_feature_rep(next_state, orientation)
-    #
-    #         RPE, next_Q = self.compute_error(f, a, next_f, next_state, reward)
-    #
-    #         if self.env.is_terminal(next_state):
-    #             self.update_reliability(RPE)
-    #
-    #         self.update_weights(RPE, a, f)
-    #
-    #         cumulative_reward += reward
-    #         s = next_state
-    #         f = next_f
-    #         Q = next_Q
-    #         t += 1
-    #
-    #         results = results.append({'time': t, 'reward': reward, 'RPE': RPE, 'reliability': self.reliability,
-    #                                   'state': s}, ignore_index=True)
-    #     return results
-
     def setup(self):
         pass
 
@@ -81,7 +39,6 @@ class LandmarkLearningAgent(Agent, AssociativeAgent):
     def take_decision(self):
         pass
 
-
     def update(self, reward, s, ego_a):
         visual_rep = self.get_feature_rep()
         RPE, Q = self.compute_error(self.last_observation, ego_a, visual_rep, s, reward)
@@ -91,18 +48,6 @@ class LandmarkLearningAgent(Agent, AssociativeAgent):
 
     def update_reliability(self, RPE):
         self.reliability += self.eta * ((1 - abs(RPE) / self.max_RPE) - self.reliability)
-
-    #
-    # def update_reliability(self, RPE):
-    #     self.reliability += self.eta * ((1 - abs(RPE) / self.max_RPE) - self.reliability)
-
-    # def update_weights(self, RPE, action, features):
-    #     self.weights[:, action] = self.weights[:, action] + self.learning_rate * RPE * features
-
-    # def softmax_selection(self, state_index, Q):
-    #     probabilities = utils.softmax(Q, self.beta)
-    #     action_idx = np.random.choice(list(range(self.env.nr_actions)), p=probabilities)
-    #     return action_idx
 
     def get_feature_rep(self, state=None, orientation=None):
         if state is None:
@@ -144,12 +89,6 @@ class LandmarkLearningAgent(Agent, AssociativeAgent):
             np.array(landmark_location) - np.array(self.env.get_state_location(state)))
         return distance_to_landmark
 
-    # def get_orientation(self, state, next_state, current_orientation):
-    #     if state == next_state:
-    #         return current_orientation
-    #     s1 = self.env.get_state_location(state)
-    #     s2 = self.env.get_state_location(next_state)
-    #     return np.degrees(np.arctan2(s2[1] - s1[1], s2[0] - s1[0]))
     def compute_error(self, f, a, next_f, next_state, reward):
         Q = self.compute_Q(f)
         next_Q = self.weights.T @ next_f
@@ -218,14 +157,6 @@ class LandmarkCells(object):
     def compute_response(self, distance, angle):
         angle = np.radians(angle)
         return np.array([f.pdf([distance, angle]) * np.sqrt((2*np.pi)**2 * np.linalg.det(f.cov)) for f in self.receptive_fields])
-    #
-    # def compute_response2(self, distance, angle):
-    #     for f in self.receptive_fields:
-    #         #print(f.pdf([distance, angle]))
-    #         f.pdf([distance, angle])
-    #         np.sqrt((2*np.pi)**2 * np.linalg.det(f.cov))
-    #         np.linalg.det(f.cov)
-    #         np.sqrt(2*np.pi)
 
     def plot_receptive_field(self, idx):
         ax = plt.subplot(projection="polar")

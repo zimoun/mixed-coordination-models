@@ -1,9 +1,9 @@
 import numpy as np
 # import matplotlib.pyplot as plt
 # import matplotlib.patches as mpatches
-from agents.agent import Agent, ModelBasedAgent
+from agents.agent import Agent, ModelBasedAgent, FirstOrderAgent
 
-class RTDP(Agent, ModelBasedAgent):
+class RTDP(Agent, ModelBasedAgent, FirstOrderAgent):
 
     def __init__(self, env, gamma, learning_rate, inv_temp, eta=.03):
 

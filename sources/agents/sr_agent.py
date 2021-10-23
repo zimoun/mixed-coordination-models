@@ -1,8 +1,8 @@
-from agents.agent import Agent, ModelBasedAgent
+from agents.agent import Agent, ModelBasedAgent, FirstOrderAgent
 import numpy as np
 import utils
 
-class SRTD(Agent, ModelBasedAgent):
+class SRTD(Agent, ModelBasedAgent, FirstOrderAgent):
     def __init__(self, env, gamma, learning_rate, inv_temp, eta, init_sr='identity', beta=20):
 
         super().__init__(env, gamma, learning_rate, inv_temp, eta)

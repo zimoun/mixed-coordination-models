@@ -39,43 +39,6 @@ class SRTD(Agent, ModelBasedAgent, FirstOrderAgent):
     def setup(self):
         pass
 
-    # def one_episode(self, time_limit, random_policy=False):
-    #     #print("sr lr: ", self.learning_rate)
-    #
-    #     self.env.reset()
-    #     t = 0
-    #     s = self.env.get_current_state()
-    #     cumulative_reward = 0
-    #
-    #     results = pd.DataFrame({'time': [],
-    #                             'reward': [],
-    #                             'RPE': [],
-    #                             'reliability': [],
-    #                             'state': []})
-    #
-    #     while not self.env.is_terminal(s) and t < time_limit:
-    #         if random_policy:
-    #             a = np.random.choice(list(range(self.env.nr_actions)))
-    #         else:
-    #             a = self.select_action(s)
-    #
-    #         next_state, reward = self.env.act(a)
-    #
-    #         SPE = self.compute_error(next_state, s)
-    #
-    #         self.update_reliability(SPE, s)
-    #         self.M_hat[s, :] += self.update_M(SPE)
-    #         self.update_R(next_state, reward)
-    #
-    #         s = next_state
-    #         t += 1
-    #         cumulative_reward += reward
-    #
-    #         results = results.append({'time': t, 'reward': reward, 'SPE': SPE, 'reliability': self.reliability,
-    #                                   'state': s}, ignore_index=True)
-    #
-    #     return results
-
     def init_saving(self, t, s):
         pass
 
@@ -92,10 +55,6 @@ class SRTD(Agent, ModelBasedAgent, FirstOrderAgent):
         self.update_R(s, reward)
         return SPE
 
-    # def update_R(self, next_state, reward):
-    #     RPE = reward - self.R_hat[next_state]
-    #     self.R_hat[next_state] += 1. * RPE
-
     def update_M(self, SPE):
         delta_M = self.learning_rate * SPE
         return delta_M
@@ -109,18 +68,6 @@ class SRTD(Agent, ModelBasedAgent, FirstOrderAgent):
         else:
             SPE = self.identity[s, :] + self.gamma * self.M_hat[next_state, :] - self.M_hat[s, :]
         return SPE
-
-    # def select_action(self, state_idx, softmax=True):
-    #     # TODO: get categorical dist over next state
-    #     # okay because it's local
-    #     # gradient-based (hill-climbing) gradient ascent
-    #     # graph hill climbing
-    #     # Maybe change for M(sa,sa). potentially over state action only in two step
-    #     V = self.M_hat @ self.R_hat
-    #     next_state = [self.env.get_next_state(state_idx, a) for a in range(self.env.nr_actions)]
-    #     Q = [V[s] for s in next_state]
-    #     probabilities = utils.softmax(Q, self.beta)
-    #     return np.random.choice(list(range(self.env.nr_actions)), p=probabilities)
 
     def compute_Q(self, state_idx):
         V = self.M_hat @ self.R_hat

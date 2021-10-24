@@ -18,11 +18,6 @@ class DolleAgent(Agent, AssociativeAgent):
 
         super().__init__(env=env, gamma=gamma, learning_rate=eta, inv_temp=arbi_inv_temp, eta=eta)
 
-        # self.alpha1 = 0.01
-        # self.beta1 = 0.1
-        # self.A_alpha = 3.2 # Steepness of transition curve MF to SR
-        # self.A_beta = 1.1
-
         self.inv_temp_gd = inv_temp_gd
         self.inv_temp_mf = inv_temp_mf
         self.arbi_inv_temp = arbi_inv_temp
@@ -45,20 +40,6 @@ class DolleAgent(Agent, AssociativeAgent):
         self.weights = np.zeros((80+80+80, 2))
         self.last_observation = np.zeros(80+80+80)
         self.last_decision_arbi = 0
-        # comes from the original implementation, to introduce partial lesions
-        # if inact_hpc:
-        #     self.max_psr = 1. - inact_hpc
-        #     self.p_sr = self.max_psr
-        #     self.inact_dls = 0.
-        # elif inact_dls:
-        #     self.max_psr = 1
-        #     self.inact_dls = inact_dls
-        #     self.p_sr = .8
-        # else:
-        #     self.max_psr = 1
-        #     self.inact_dls = 0.
-        #     self.p_sr = .9
-
 
     def setup(self):
         pass
@@ -81,20 +62,6 @@ class DolleAgent(Agent, AssociativeAgent):
 
     def take_decision(self, s, orientation):
 
-        # print("gamma: ", self.gamma)
-        # print("invtemp: ", self.inv_temp)
-        # print("lr: ", self.learning_rate)
-        # print("eta: ", self.eta)
-        # print("DLSgamma: ", self.DLS.gamma)
-        # print("DLSinvtemp: ", self.DLS.inv_temp)
-        # print("DLSlr: ", self.DLS.learning_rate)
-        # print("DLSeta: ", self.DLS.eta)
-        # print("HPCgamma: ", self.HPC.gamma)
-        # print("HPCinvtemp: ", self.HPC.inv_temp)
-        # print("HPClr: ", self.HPC.learning_rate)
-        # print("HPCeta: ", self.HPC.eta)
-        # print()
-
         # computing of different Q-values tables
         Q, _, _, _, _, decision_arbi = self.compute_Q(s)
 
@@ -103,7 +70,6 @@ class DolleAgent(Agent, AssociativeAgent):
             allo_a = self.softmax_selection(state_index=s, Q=Q, nbr_actions=6, inv_temp=self.DLS.inv_temp)
         else:
             allo_a = self.softmax_selection(state_index=s, Q=Q, nbr_actions=6, inv_temp=self.HPC.inv_temp)
-
 
         self.last_decision_arbi = decision_arbi
         ego_a = self.DLS.get_ego_action(allo_a, orientation)
@@ -127,11 +93,6 @@ class DolleAgent(Agent, AssociativeAgent):
 
     def get_feature_rep(self, state=None):
 
-        # if orientation is not None:
-        #     visual_rep = self.DLS.get_feature_rep(state, orientation)
-        # else:
-        #     visual_rep = self.DLS.get_feature_rep(state)
-        # print(visual_rep)
         visual_rep = self.DLS.get_feature_rep()
         # print(visual_rep)
         features_dist = self.get_feature_dist(state)
@@ -160,19 +121,6 @@ class DolleAgent(Agent, AssociativeAgent):
 
         flattened = blurred.flatten()
         return flattened
-
-    # def softmax_selection(self, state_index, Q, nbr_actions, inv_temp):
-    #     try:
-    #         probabilities = utils.softmax(Q, inv_temp)
-    #         action_idx = np.random.choice(list(range(nbr_actions)), p=probabilities)
-    #     except Exception:
-    #         raise Exception()
-    #         action_idx = np.array(Q).argmax()
-    #
-    #     return action_idx
-
-    # def update_weights(self, RPE, action, features):
-    #     self.weights[:, action] = self.weights[:, action] + self.learning_rate * RPE * features
 
     def compute_Q(self, state_idx, orientation=None):
 
@@ -210,46 +158,3 @@ class DolleAgent(Agent, AssociativeAgent):
         else:
             RPE = reward + self.gamma * np.max(next_Q) - Q[a]
         return RPE, next_Q
-
-
-    # def update_p_sr(self):
-    #     if self.lesion_hippocampus:
-    #         self.p_sr = 0.
-    #         return
-    #     if self.lesion_striatum:
-    #         self.p_sr = 1.
-    #         return
-    #
-    #     alpha = self.get_alpha(self.DLS.reliability)
-    #     beta = self.get_beta(self.HPC.reliability)
-    #
-    #     tau = self.max_psr / (alpha + beta)
-    #     fixedpoint = (alpha + self.inact_dls * beta) * tau
-    #
-    #     dpdt = (fixedpoint - self.p_sr) / tau
-    #
-    #     new_p_sr = self.p_sr + dpdt
-    #
-    #     if new_p_sr > self.max_psr:
-    #         new_p_sr = self.max_psr
-    #     if new_p_sr < 0:
-    #         new_p_sr = 0
-    #
-    #     if new_p_sr < 0 or new_p_sr > 1:
-    #         raise ValueError('P(SR) is not a probability: {}'.format(new_p_sr))
-    #
-    #     self.p_sr = new_p_sr
-    #
-    #
-    # def get_alpha(self, chi_mf):
-    #     alpha1 = self.alpha1
-    #     A = self.A_alpha
-    #     B = np.log((alpha1 ** -1) * A - 1)
-    #     return A / (1 + np.exp(B * chi_mf))
-    #
-    #
-    # def get_beta(self, chi_mb):
-    #     beta1 = self.beta1
-    #     A = self.A_beta
-    #     B = np.log((beta1 ** -1) * A - 1)
-    #     return A / (1 + np.exp(B * chi_mb))

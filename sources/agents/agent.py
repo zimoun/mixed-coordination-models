@@ -9,7 +9,7 @@ class Agent(ABC):
         self.env = env # the environment
         self.gamma = gamma # discount factor of value propagation
         self.learning_rate = learning_rate
-        self.inv_temp = inv_temp # exploration's inverse temperature (used with softmax)
+        self.inv_temp = inv_temp # softmax exploration's inverse temperature
         self.results = None # to temporarily store agent's and environment's variables at each episode
 
     @abstractmethod

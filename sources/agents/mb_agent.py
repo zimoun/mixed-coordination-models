@@ -17,14 +17,6 @@ class RTDP(Agent, ModelBasedAgent, FirstOrderAgent):
         self.N = np.ones((self.env.nr_states,self.env.nr_actions))
         self.R_hat = np.zeros(self.env.nr_states)
 
-
-    # def update_R(self, next_state, reward):
-    #     RPE = reward - self.R_hat[next_state]
-    #     self.R_hat[next_state] += 1. * RPE
-
-
-    # def update_reliability(self, RPE):
-    #     self.reliability += self.eta * ((1 - abs(RPE) / self.max_RPE) - self.reliability)
     def setup(self):
         pass
 

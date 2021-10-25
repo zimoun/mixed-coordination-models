@@ -19,16 +19,16 @@ class LandmarkLearningAgent(Agent, AssociativeAgent, FirstOrderAgent):
         :type gamma: float
         :param learning_rate: learning rate of the model
         :type learning_rate: int
-        :param inv_temp: exploration's inverse temperature (used with softmax)
+        :param inv_temp: softmax exploration's inverse temperature
         :type inv_temp: int
         :param eta: used to update the model's reliability
         :type eta: float
         :param allo: whether the model uses an allocentric or egocentric frame of reference
         :type allo: boolean
         """
-        super().__init__(env=env, gamma=0.9, learning_rate=learning_rate, inv_temp=inv_temp)
+        Agent().__init__(env=env, gamma=0.9, learning_rate=learning_rate, inv_temp=inv_temp)
 
-        self.eta = eta
+        self.eta = eta # to compute the model's reliability (see update_reliability())
         self.allo = allo
         self.responses = {} # to temporarily store agent's and environment's variables during each episode (to build log files)
         self.reliability = 0. # used as a parameter by an uncertainty driven coordination model

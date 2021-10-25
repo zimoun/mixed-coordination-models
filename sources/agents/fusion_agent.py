@@ -15,7 +15,7 @@ class CombinedAgent(Agent):
         if init_sr != 'zero' and init_sr != 'rw' and init_sr != 'identity':
             raise Exception("init_sr should be set to either 'zero', 'rw' or 'identity'")
 
-        super().__init__(env=env, gamma=gamma, learning_rate=None, inv_temp=inv_temp, eta=eta)
+        super().__init__(env=env, gamma=gamma, learning_rate=None, inv_temp=inv_temp)
 
         self.A_alpha = A_alpha
         self.A_beta = A_beta
@@ -156,14 +156,3 @@ class CombinedAgent(Agent):
         A = self.A_beta
         B = np.log((beta1 ** -1) * A - 1)
         return A / (1 + np.exp(B * chi_mb))
-
-
-    # def softmax_selection(self, state_index, Q, nbr_actions, inv_temp):
-    #     try:
-    #         probabilities = utils.softmax(Q, inv_temp)
-    #         action_idx = np.random.choice(list(range(nbr_actions)), p=probabilities)
-    #     except Exception:
-    #         raise Exception()
-    #         action_idx = np.array(Q).argmax()
-    #
-    #     return action_idx

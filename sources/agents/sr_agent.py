@@ -5,22 +5,35 @@ from agents.agent import Agent, ModelBasedAgent, FirstOrderAgent
 
 
 class SRTD(Agent, ModelBasedAgent, FirstOrderAgent):
+    """
+    Successor-Representation model based on Dayan 1993 article.
+    Used in this work as a model of the hippocampus and goal-directed learning in the coordination model of Geerts 2020.
+    The SR represent a middle ground between MF and MB algorithms in the tradeoff between computational complexity and learning flexibility.
+    As any MB agent, the SR agent possess a reward function representation, however it doesn't implement
+    an estimation of the transition function. It rather updates a matrix M that encodes the future discounted probability
+    to visit any state S' when in state S, for all states S of the environment. This makes the agent less flexible to transition
+    function changes than MB, however it allows to decrease the complexity of the model's updates, making it dramatically less computationaly
+    expensive than MB, but still higher than MF (see Gershman 2018 for a review).
+    The input of the model is represented by a single int representing the discrete state of the environment.
+    The state of the environment is omnisciently known by the agent, and not inferred from visual,
+    vestibular or proprioceptive information like in more biologically plausible models. This represent a limitation of this model.
+    Apart from some modifications and deletions, most of the following lines were taken from the original code of Geerts 2020.
+
+    :param env: the environment
+    :type env: Environment
+    :param gamma: discount factor of value propagation
+    :type gamma: float
+    :param learning_rate: learning rate of the model
+    :type learning_rate: int
+    :param inv_temp: softmax exploration's inverse temperature
+    :type inv_temp: int
+    :param eta: used to update the model's reliability
+    :type eta: float
+    :param init_sr: how the SR weights must be initialized (either "zero", "rw", "identity" or "opt")
+    :type init_sr: str
+    """
 
     def __init__(self, env, gamma, learning_rate, inv_temp, eta, init_sr='identity'):
-        """
-        :param env: the environment
-        :type env: Environment
-        :param gamma: discount factor of value propagation
-        :type gamma: float
-        :param learning_rate: learning rate of the model
-        :type learning_rate: int
-        :param inv_temp: softmax exploration's inverse temperature
-        :type inv_temp: int
-        :param eta: used to update the model's reliability
-        :type eta: float
-        :param init_sr: how the SR weights must be initialized (either "zero", "rw", "identity" or "opt")
-        :type init_sr: str
-        """
 
         Agent().__init__(env, gamma, learning_rate, inv_temp)
 
@@ -42,7 +55,6 @@ class SRTD(Agent, ModelBasedAgent, FirstOrderAgent):
         """
         M_hat = np.zeros((self.env.nr_states, self.env.nr_states))
         random_policy = utils.generate_random_policy(self.env)
-        init_sr="rw"
         if init_sr == 'zero': # all weights are set to zero
             return M_hat
         if init_sr == 'identity': # only self transitions are set to 1, others to 0
@@ -75,6 +87,7 @@ class SRTD(Agent, ModelBasedAgent, FirstOrderAgent):
     def update(self, reward, last_state, s, allo_a):
         """
         Triggers the M matrix and reward function updates
+        Returns an error signal to allows second-order arbitrator to infer the reliability of the model over time
 
         :param reward: reward obtained by transitioning to the current state s
         :type reward: float
@@ -129,7 +142,10 @@ class SRTD(Agent, ModelBasedAgent, FirstOrderAgent):
 
     def compute_Q(self, state_idx):
         """
-        Compute and returns the Q-values of the agent at state state_idx
+        Compute and returns the Q-values of the agent at state state_idx (see Dayan 1993 for original equations)
+        To retrieve the value of a neighbor state of state_idx, the reward function is multiplied to the vector at
+        index S (next state) and the resulting vector is summed to obtain the value of the state S.
+
         :type state_idx: int
         :return type: float array
         """

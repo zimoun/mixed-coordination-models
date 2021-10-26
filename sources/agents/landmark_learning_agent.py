@@ -7,25 +7,32 @@ from agents.agent import Agent, AssociativeAgent, FirstOrderAgent
 
 
 class LandmarkLearningAgent(Agent, AssociativeAgent, FirstOrderAgent):
-    """Q-learning agent using landmark features
+    """
+    Model-Free reinforcement learning agent.
+    Used in this work as a model of the Dorso-Lateral Striatum in the coordination model of both Geerts 2020 and Dolle 2010.
+    Apart from some modifications and deletions, most of the following lines were taken from the original code of Geerts 2020.
+    The input of the model is represented by a visual neurons (see LandmarkCells object) layer which activity encode the distance
+    and orientation of two different landmarks relative to the agents. This visual layer is connected to an action neuronal layer
+    with synapses of adaptive weights. Learning in this model consists in modifying the weights of these synapses using TD updates
+    for the agent to eventually select the best action (giving highest long term reward) for each given visual input.
+
+    :param env: the environment
+    :type env: Environment
+    :param gamma: discount factor of value propagation
+    :type gamma: float
+    :param learning_rate: learning rate of the model
+    :type learning_rate: int
+    :param inv_temp: softmax exploration's inverse temperature
+    :type inv_temp: int
+    :param eta: used to update the model's reliability
+    :type eta: float
+    :param allo: whether the model uses an allocentric or egocentric frame of reference
+    :type allo: boolean
     """
     max_RPE = 1 # see update_reliability()
 
     def __init__(self, env, gamma, learning_rate, inv_temp, eta, allo):
-        """
-        :param env: the environment
-        :type env: Environment
-        :param gamma: discount factor of value propagation
-        :type gamma: float
-        :param learning_rate: learning rate of the model
-        :type learning_rate: int
-        :param inv_temp: softmax exploration's inverse temperature
-        :type inv_temp: int
-        :param eta: used to update the model's reliability
-        :type eta: float
-        :param allo: whether the model uses an allocentric or egocentric frame of reference
-        :type allo: boolean
-        """
+
         Agent().__init__(env=env, gamma=0.9, learning_rate=learning_rate, inv_temp=inv_temp)
 
         self.eta = eta # to compute the model's reliability (see update_reliability())
@@ -51,6 +58,7 @@ class LandmarkLearningAgent(Agent, AssociativeAgent, FirstOrderAgent):
     def update(self, reward, s, ego_a):
         """
         Update the model weights using TD-learning
+        Returns an error signal to allows second-order arbitrator to infer the reliability of the model over time
 
         :param reward: reward obtained by transitioning to the current state s
         :type reward: float
@@ -59,7 +67,8 @@ class LandmarkLearningAgent(Agent, AssociativeAgent, FirstOrderAgent):
         :param ego_a: the last performed action (in the egocentric frame)
         :type ego_a: int
 
-        :returns: The RPE, which is used to later compute the model's reliability
+        :returns: The TD error signal (RPE)
+        :return type: float
         """
         visual_rep = self.get_feature_rep() # landmark neurons input
         Q = self.compute_Q(self.last_observation)

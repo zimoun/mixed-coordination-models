@@ -1,10 +1,10 @@
+import numpy as np
+import pandas as pd
 from agents.agent import Agent
 from agents.sr_agent import SRTD
 from agents.mb_agent import RTDP
 from agents.landmark_learning_agent import LandmarkLearningAgent
-import numpy as np
-import utils
-import pandas as pd
+
 
 class CombinedAgent(Agent):
 
@@ -15,7 +15,7 @@ class CombinedAgent(Agent):
         if init_sr != 'zero' and init_sr != 'rw' and init_sr != 'identity':
             raise Exception("init_sr should be set to either 'zero', 'rw' or 'identity'")
 
-        super().__init__(env=env, gamma=gamma, learning_rate=None, inv_temp=inv_temp)
+        Agent().__init__(env=env, gamma=gamma, learning_rate=None, inv_temp=inv_temp)
 
         self.A_alpha = A_alpha
         self.A_beta = A_beta
@@ -51,10 +51,8 @@ class CombinedAgent(Agent):
             self.inact_dls = 0.
             self.p_sr = .9
 
-
     def setup(self):
         self.update_p_sr()
-
 
     def init_saving(self, t, s):
 
@@ -71,7 +69,6 @@ class CombinedAgent(Agent):
         self.results['P(SR)'].append(self.p_sr)
         self.results['previous_platform'].append(self.env.previous_platform_state)
         self.results['platform'].append(self.env.get_goal_state())
-
 
     def take_decision(self, s, orientation):
 
@@ -95,7 +92,6 @@ class CombinedAgent(Agent):
             if not self.lesion_hippocampus:
                 self.HPC.update_reliability(SPE, previous_state)
 
-
     def compute_Q(self, state_idx):
         # if orientation is None:
         #     orientation = 0
@@ -113,7 +109,6 @@ class CombinedAgent(Agent):
         Q_combined = self.p_sr * np.array(Q_sr) + (1-self.p_sr) * np.array(Q_allo)
 
         return Q_combined, Q_ego, Q_allo, Q_sr
-
 
     def update_p_sr(self):
         if self.lesion_hippocampus:
@@ -143,13 +138,11 @@ class CombinedAgent(Agent):
 
         self.p_sr = new_p_sr
 
-
     def get_alpha(self, chi_mf):
         alpha1 = self.alpha1
         A = self.A_alpha
         B = np.log((alpha1 ** -1) * A - 1)
         return A / (1 + np.exp(B * chi_mf))
-
 
     def get_beta(self, chi_mb):
         beta1 = self.beta1

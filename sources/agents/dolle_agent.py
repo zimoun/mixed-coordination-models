@@ -78,9 +78,9 @@ class DolleAgent(Agent, AssociativeAgent):
 
     def update(self, previous_state, reward, s, allo_a, ego_a, orientation):
         decision_arbi = self.last_decision_arbi
-        RPE = self.DLS.update(reward, s, ego_a)
+        RPE = self.DLS.update(previous_state, reward, s, allo_a, ego_a, orientation)
         if not self.lesion_hippocampus:
-            SPE = self.HPC.update(reward, previous_state, s, allo_a)
+            SPE = self.HPC.update(previous_state, reward, s, allo_a, ego_a, orientation)
 
         features_arb = self.get_feature_rep(s)
 
@@ -122,10 +122,8 @@ class DolleAgent(Agent, AssociativeAgent):
         flattened = blurred.flatten()
         return flattened
 
-    def compute_Q(self, state_idx, orientation=None):
+    def compute_Q(self, state_idx):
 
-        if orientation is None:
-            orientation = 0
         # compute Q_SR
         if self.lesion_hippocampus:
             Q_sr = np.array([0.,0.,0.,0.,0.,0.])

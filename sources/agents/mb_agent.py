@@ -49,30 +49,34 @@ class RTDP(Agent, ModelBasedAgent, FirstOrderAgent):
     def take_decision(self): # not used yet
         pass
 
-    def update(self, reward, last_state, s, allo_a):
+    def update(self, previous_state, reward, s, allo_a, ego_a, orientation):
         """
         Updates the transition and reward functions updates. See (Barto, Bradtke, and Singh 1995) for original equations
         Updates the value function using replay (single full value backup)
         Returns an error signal to allows second-order arbitrator to infer the reliability of the model over time
 
+        :param previous_state: the previous state
+        :type previous_state: int
         :param reward: reward obtained by transitioning to the current state s
         :type reward: float
-        :param last_state: the previous state
-        :type last_state: int
-        :param s: the current state
+        :param s: the current state of the agent
         :type s: int
         :param allo_a: the last performed action (in the allocentric frame)
         :type allo_a: int
+        :param ego_a: the last performed action (in the egocentric frame)
+        :type ego_a: int
+        :param orientation: the current orientation of the agent
+        :type orientation: int
 
         :returns: The TD error signal (RPE)
         :return type: float
         """
-        Q_values = self.compute_Q(last_state) # Q-values at previous state
+        Q_values = self.compute_Q(previous_state) # Q-values at previous state
         # update the model of the environment
-        for y in range(len(self.hatP[last_state,allo_a,:])):
-            self.hatP[last_state,allo_a,y] = (1-1/self.N[last_state,allo_a])*self.hatP[last_state,allo_a,y] + (1/self.N[last_state,allo_a]*(s==y))
-        # keeping track of the number of time allo_a was performed in last_state
-        self.N[last_state,allo_a] = self.N[last_state,allo_a] + 1
+        for y in range(len(self.hatP[previous_state,allo_a,:])):
+            self.hatP[previous_state,allo_a,y] = (1-1/self.N[previous_state,allo_a])*self.hatP[previous_state,allo_a,y] + (1/self.N[previous_state,allo_a]*(s==y))
+        # keeping track of the number of time allo_a was performed in previous_state
+        self.N[previous_state,allo_a] = self.N[previous_state,allo_a] + 1
 
         self.update_R(s, reward) # reward function udate
         Qmax = self.Q.max(axis=1)
@@ -83,7 +87,7 @@ class RTDP(Agent, ModelBasedAgent, FirstOrderAgent):
                 self.Q[rs,ra] =  self.R_hat[self.env.get_next_state_and_reward(rs,ra)[0]] + self.gamma*(np.dot(self.hatP[rs,ra,:], Qmax))
 
         # for uncertainty based arbitrator
-        RPE = self.compute_error(last_state, s, reward, Q_values[allo_a])
+        RPE = self.compute_error(previous_state, s, reward, Q_values[allo_a])
         return RPE
 
     def update_reliability(self, RPE, s):
@@ -97,12 +101,12 @@ class RTDP(Agent, ModelBasedAgent, FirstOrderAgent):
         """
         self.reliability += self.eta * ((1 - abs(RPE) / self.max_RPE) - self.reliability)
 
-    def compute_error(self, last_state, s, reward, Q_value):
+    def compute_error(self, previous_state, s, reward, Q_value):
         """
         Compute the TD error for a given transition
 
-        :param last_state: pre-transition state
-        :type last_state: int
+        :param previous_state: pre-transition state
+        :type previous_state: int
         :param s: post-transition state
         :type s: int
         :param reward: reward obtained transitioning to next_state
@@ -113,9 +117,9 @@ class RTDP(Agent, ModelBasedAgent, FirstOrderAgent):
         :returns type: float
         """
         if self.env.is_terminal(s):
-            RPE = reward + self.gamma * np.max(self.Q[last_state,:]) - Q_value
+            RPE = reward + self.gamma * np.max(self.Q[previous_state,:]) - Q_value
         else:
-            RPE = reward + self.gamma * np.max(self.Q[last_state,:]) - Q_value
+            RPE = reward + self.gamma * np.max(self.Q[previous_state,:]) - Q_value
         return RPE
 
     def compute_Q(self, state_idx):

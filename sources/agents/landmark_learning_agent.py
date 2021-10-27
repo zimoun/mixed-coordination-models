@@ -55,17 +55,23 @@ class LandmarkLearningAgent(Agent, AssociativeAgent, FirstOrderAgent):
     def take_decision(self): # not used yet
         pass
 
-    def update(self, reward, s, ego_a):
+    def update(self, previous_state, reward, s, allo_a, ego_a, orientation):
         """
         Update the model weights using TD-learning
         Returns an error signal to allows second-order arbitrator to infer the reliability of the model over time
 
+        :param previous_state: the previous state
+        :type previous_state: int
         :param reward: reward obtained by transitioning to the current state s
         :type reward: float
-        :param s: the current state
+        :param s: the current state of the agent
         :type s: int
+        :param allo_a: the last performed action (in the allocentric frame)
+        :type allo_a: int
         :param ego_a: the last performed action (in the egocentric frame)
         :type ego_a: int
+        :param orientation: the current orientation of the agent
+        :type orientation: int
 
         :returns: The TD error signal (RPE)
         :return type: float

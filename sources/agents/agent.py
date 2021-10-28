@@ -17,7 +17,7 @@ class Agent(ABC):
         pass
 
     # compute the preferred action of the model at a given timestep,
-    # according to its Q-values and its explorative behavior
+    # according to the model's Q-values and explorative behavior.
     @abstractmethod
     def take_decision(self):
         pass

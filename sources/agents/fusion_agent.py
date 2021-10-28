@@ -11,8 +11,8 @@ class CombinedAgent(Agent):
     CombinedAgent is a class which implementents the uncertainty-based, fusion coordination model of Geert 2020.
     It regulate behavioral control between two spatial navigation experts: A model of the Dorsolateral Striatum (DLS)
     and a model of the Hippocampus (HPC). The DLS is modeled in this work and in Geerts original work using an associative learning strategy,
-    which is implemented by the LandmarkLearningAgent class in the landmark_learning_agent module.
-    The HPC is modeled in both Geerts and our work by the Successor Representation, which is implemented by the SRTD class in the fusion_agent module.
+    which is here implemented by the LandmarkLearningAgent class in the landmark_learning_agent module.
+    The HPC is modeled in both Geerts and our work by the Successor Representation, which is implemented here by the SRTD class in the fusion_agent module.
     CombinedAgent also support a model-based algorithm as its HPC module. (See RTDP class in mb_agent module)
     The CombinedAgent class is a fusion coordination model. It maintain a push-pull relationship over behavioral control between the HPC and the DLS module.
     The proportion of control given to one of the two spatial navigation experts over behavior is function of their reliability, which
@@ -22,23 +22,25 @@ class CombinedAgent(Agent):
     :type env: Environment
     :param gamma: discount factor of value propagation
     :type gamma: float
-    :param learning_rate: learning rate of the model
-    :type learning_rate: int
+    :param q_lr: learning rate of the DLS model
+    :type q_lr: float
+    :param sr_lr: learning rate of the HPC model (SR or MB)
+    :type sr_lr: float
     :param inv_temp: softmax exploration's inverse temperature
     :type inv_temp: int
     :param eta: used to update the HPC and DLS models' reliability
     :type eta: float
-    :param A_alpha:
-    :type A_alpha:
-    :param A_alpha:
-    :type A_alpha:
-    :param alpha1:
-    :type alpha1:
-    :param beta1:
-    :type beta1:
+    :param A_alpha: steepness of transition curve MF to SR
+    :type A_alpha: float
+    :param A_beta: steepness of transition curve SR to MF
+    :type A_beta: float
+    :param alpha1: used to compute the transition rate from MF to SR
+    :type alpha1: float
+    :param beta1: used to compute the transition rate from SR to MF
+    :type beta1: float
     :param init_sr: how the SR weights must be initialized (either "zero", "rw", "identity" or "opt")
     :type init_sr: str
-    :param HPCmode: to choose the model of the HPC,either "SR" or "MB"
+    :param HPCmode: to choose the model of the HPC, either "SR" or "MB"
     :type HPCmode: str
     :param mf_allo: whether the DLS module is in the allocentric or egocentric frame of reference
     :type mf_allo: boolean
@@ -115,8 +117,8 @@ class CombinedAgent(Agent):
 
     def take_decision(self, s, orientation):
         """
-        Compute the preferred action of the fusion model at a given timestep,
-        According to its Q-values and its explorative behavior
+        Compute the preferred action of the fusion model at a given timestep.
+        According to the model's Q-values and explorative behavior.
 
         :param s: the current state of the agent
         :type s: int
@@ -239,8 +241,8 @@ class CombinedAgent(Agent):
         :return type: float
         """
         alpha1 = self.alpha1
-        A = self.A_alpha
-        B = np.log((alpha1 ** -1) * A - 1)
+        A = self.A_alpha # steepness of transition curve
+        B = np.log((alpha1 ** -1) * A - 1) # transition rate
         return A / (1 + np.exp(B * chi_mf))
 
     def get_beta(self, chi_mb):
@@ -254,6 +256,6 @@ class CombinedAgent(Agent):
         :return type: float
         """
         beta1 = self.beta1
-        A = self.A_beta
-        B = np.log((beta1 ** -1) * A - 1)
+        A = self.A_beta # steepness of transition curve
+        B = np.log((beta1 ** -1) * A - 1) # transition rate
         return A / (1 + np.exp(B * chi_mb))

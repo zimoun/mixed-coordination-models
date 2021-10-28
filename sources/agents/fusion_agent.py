@@ -17,6 +17,7 @@ class CombinedAgent(Agent):
     The CombinedAgent class is a fusion coordination model. It maintain a push-pull relationship over behavioral control between the HPC and the DLS module.
     The proportion of control given to one of the two spatial navigation experts over behavior is function of their reliability, which
     is computed based on the difference between expected and observed outcome.
+    Several functions in the following lines of code were entirely copied or strongly inspired from the original code of Geerts 2020.
 
     :param env: the environment
     :type env: Environment
@@ -156,7 +157,6 @@ class CombinedAgent(Agent):
         """
         RPE = self.DLS.update(previous_state, reward, s, allo_a, ego_a, orientation)
         if not self.lesion_hippocampus:
-
             SPE = self.HPC.update(previous_state, reward, s, allo_a, ego_a, orientation)
 
         # Reliability updates

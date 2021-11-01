@@ -1,7 +1,7 @@
 from utils import get_MSLE
 from agents.dolle_agent import DolleAgent
 from agents.fusion_agent import CombinedAgent
-from utils import get_maze, create_path_main_pearce, determine_platform_seq, get_mean_preferred_dirs, plot_mean_arrows, create_df_grouped
+from utils import get_mean_preferred_dirs, plot_mean_arrows, create_df_grouped
 
 from IPython.display import clear_output
 from statsmodels.formula.api import ols
@@ -23,9 +23,13 @@ def perform_main_pearce(maze_size, n_trials, n_sessions, n_agents, mf_allo, sr_l
     """
     Run multiple simulations of the main experiment of Pearce 1998, a Morris water-maze derived task where a rat has
     to navigate through a circular maze filled with water, to find a submerged platform indicated by a visual landmark
-    hovering at proximity of the platform. There are 11 sessions of 4 trials. The platform and visual landmark move
-    at each new session. The rat is released at 4 different points at the edge of the pool, with each point being selected
-    at each session, in a random order. The platform might be positionned at 8 different points in the maze (see Pearce 1998 for more info)
+    hovering at proximity of the platform.
+    In this experiment there are 11 sessions of 4 trials. The platform and visual landmark move at each new session.
+    The rat might be released from 4 different locations at the edge of the pool, with each release point being selected once
+    at each session, in a random order. The platform might be positionned at 8 different points in the maze.
+    See Pearce 1998 and our code for more informations about the original and replicated protocol.
+    In the original experiment, a significant decrease of the escape time with both sessions and trials was found.
+    In this work we want to check whether Dolle's and Geerts's coordination models are able to replicate this result.
 
     :param maze_size: diameter of the Morris pool (number of states)
     :type maze_size: int
@@ -41,17 +45,17 @@ def perform_main_pearce(maze_size, n_trials, n_sessions, n_agents, mf_allo, sr_l
     :type q_lr: float
     :param sr_lr: learning rate of the HPC model (SR or MB)
     :type sr_lr: float
-    :param gamma: discount factor of value propagation
+    :param gamma: discount factor of value propagation (shared between coordination, SR, MB and MF models)
     :type gamma: float
-    :param eta: used to update the HPC and DLS models' reliability
+    :param eta: used to update the HPC and DLS models' reliability (Geerts coordination model only)
     :type eta: float
-    :param alpha1: used to compute the transition rate from MF to SR
+    :param alpha1: used to compute the transition rate from MF to SR (Geerts coordination model only)
     :type alpha1: float
-    :param beta1: used to compute the transition rate from SR to MF
+    :param beta1: used to compute the transition rate from SR to MF (Geerts coordination model only)
     :type beta1: float
-    :param A_alpha: steepness of transition curve MF to SR
+    :param A_alpha: steepness of transition curve MF to SR (Geerts coordination model only)
     :type A_alpha: float
-    :param A_beta: steepness of transition curve SR to MF
+    :param A_beta: steepness of transition curve SR to MF (Geerts coordination model only)
     :type A_beta: float
     :param landmark_dist: number of states separating the landmark from the platform
     :type landmark_dist: int
@@ -69,26 +73,27 @@ def perform_main_pearce(maze_size, n_trials, n_sessions, n_agents, mf_allo, sr_l
     :type dolle: boolean
     :param create_plots: whether to display any plot at all at the end of the simulations
     :type create_plot: boolean
-    :param show_quiv: whether to display the head-vectors of different strategies, for every state of the water-maze, at the end of the simulations
+    :param show_quiv: whether to display the preferred heading-vectors of different strategies at the end of the simulations
     :type show_quiv: boolean
     :param show_perfs: whether to display mean performances of the agents at the end of the simulations
     :type show_perfs: boolean
-    :param save_agents: whether to save each agent simulation logs (take a lot of memory), only the agent object itself is saved otherwise
+    :param save_agents: whether to save Agents object in the result folder (take a lot of memory)
     :type save_agents: boolean
-    :param inv_temp: (Geerts model only) DLS inverse temperature for softmax exploration
+    :param inv_temp: DLS inverse temperature for softmax exploration (Geerts model only)
     :type inv_temp: int
-    :param inv_temp_gd: (Dolle model only) HPC inverse temperature for softmax exploration
+    :param inv_temp_gd: HPC inverse temperature for softmax exploration (Dolle model only)
     :type inv_temp_gd: int
-    :param inv_temp_mf: (Dolle model only) DLS inverse temperature for softmax exploration
+    :param inv_temp_mf: DLS inverse temperature for softmax exploration (Dolle model only)
     :type inv_temp_mf: int
-    :param arbi_inv_temp: (Dolle model only) Coordination model inverse temperature for softmax exploration
+    :param arbi_inv_temp: Coordination model inverse temperature for softmax exploration (Dolle model only)
     :type arbi_inv_temp: int
-    :param directory: path to save results
+    :param directory: optional directory where to store all the results (used for grid-search)
     :type directory: str
     :param verbose: whether to print the progress of the simulations
     :type verbose: boolean
-    :param lesion_PFC: (only for Dolle model) Dolle arbitrator will always select the DLS strategy if True. If False the arbitrator will still
-                       need to select between HPC and DLS strategies when the HPC is lesioned (HPC Q-values all set to 0).
+    :param lesion_PFC: (only for Dolle model) Dolle arbitrator will always select the DLS strategy if True.
+                        If False the arbitrator will still need to select between HPC and DLS strategies when the HPC
+                        is lesioned (but with HPC Q-values all set to 0).
     :type lesion_PFC: boolean
     """
 
@@ -147,8 +152,8 @@ def perform_main_pearce(maze_size, n_trials, n_sessions, n_agents, mf_allo, sr_l
                                       lesion_hpc = lesion_HPC,
                                       lesion_dls = lesion_DLS,
                                       arbi_inv_temp = arbi_inv_temp,
-                                      inv_temp_gd=inv_temp_gd,
-                                      inv_temp_mf=inv_temp_mf,
+                                      inv_temp_gd = inv_temp_gd,
+                                      inv_temp_mf = inv_temp_mf,
                                       lesion_PFC = lesion_PFC)
 
             agent_df = pd.DataFrame() # to create a log file keeping track of the agents performances
@@ -181,18 +186,24 @@ def perform_main_pearce(maze_size, n_trials, n_sessions, n_agents, mf_allo, sr_l
             agent_df.to_csv(os.path.join(results_folder, 'agent{}.csv'.format(n_agent)))
             agents.append(agent)
 
-            # create plots showing performances of each agent
+            # show single agent performances
             if create_plots:
                 create_single_agent_plot(agent, agent_df, results_folder, n_agent)
 
-            clear_output() # erase everything printed on standard output
+            clear_output() # erase standard output
 
         # create plots showing mean performances of all the agents
         if create_plots:
             if show_perfs:
                 plot_main_pearce_perfs(results_folder, n_trials, n_agents, n_sessions)
             if show_quiv:
-                plot_main_pearce_quivs(agents, results_folder) # show head-vectors for each state in the water-maze
+                plot_main_pearce_quivs(agents, results_folder) # show preferred heading-vectors of each strategy
+
+        # take a lot of memory
+        if save_agents:
+            file_to_store = open(results_folder+"/agents.p", "wb")
+            pickle.dump(agents, file_to_store)
+            file_to_store.close()
 
     # if an identical simulation has already been saved
     else:
@@ -202,33 +213,28 @@ def perform_main_pearce(maze_size, n_trials, n_sessions, n_agents, mf_allo, sr_l
 
             if show_quiv:
                 agents = charge_agents(saved_results_folder+"/agents.p")
-                plot_main_pearce_quivs(agents, saved_results_folder) # show head-vectors for each state in the water-maze
-
-    # take a lot of memory
-    if save_agents:
-        file_to_store = open(results_folder+"/agents.p", "wb")
-        pickle.dump(agents, file_to_store)
-        file_to_store.close()
+                plot_main_pearce_quivs(agents, saved_results_folder) # show heading-vectors for each state in the water-maze
 
     # delete all agents, to prevent memory error
-    for agent in agents:
-        del agent
-    del agents
+    if 'agents' in locals():
+        for agent in agents:
+            del agent
+        del agents
 
 
 def plot_main_pearce_perfs(results_folder, n_trials, n_agents, n_sessions):
     """
-    Plot four figures showing the mean performances of the agents with data saved at path results_folder.
+    Plot four figures showing the mean performances of the agents which data is saved at path results_folder.
     Figure 1: Escape time per session for all trials
     Figure 2: Escape time per trial with vlines indicating new sessions
-    Figure 3: Arbitrator choice evolution across session
+    Figure 3: Arbitrator's choice evolution across session
     Figure 4: Plot the average escape time per platform
 
     :param results_folder: path of the results folder
     :type results_folder: str
     :param n_trials: number of trials to run
     :type n_trials: int
-    :param n_agents: number of simulations stored in results_folder
+    :param n_agents: number of simulations (agents) stored in results_folder
     :type n_agents: int
     :param n_sessions: number of sessions to run
     :type n_sessions: int
@@ -320,8 +326,8 @@ def plot_main_pearce_perfs(results_folder, n_trials, n_agents, n_sessions):
 
 def plot_main_pearce_quivs(agents, results_folder):
     """
-    Plot eight quivers of the heading vectors at each of the states of the hexagonal water-maze.
-    In other words, each quiver dislay 270 arrows showing the preferred direction of a given strategy at each state
+    Plot eight quivers of the heading vectors of each strategy.
+    Each quiver display 270 arrows showing the preferred direction of a given strategy at each state of the maze
     Plot a first set of quivers with platform at state 18 and 4 trials of additional training:
     One quiver for egocentric MF strategy
     One quiver for allocentric MF strategy
@@ -337,7 +343,7 @@ def plot_main_pearce_quivs(agents, results_folder):
     """
     figure_folder = os.path.join(results_folder, 'figs')
 
-    # plot a first quiver, showing the heading-vectors after a 4 trials training
+    # plot a first set of quivers, showing the heading-vectors after a 4 trials training
     if str(type(agents[0])) != "<class 'agents.dolle_agent.DolleAgent'>" :
         hv_mf, hv_allo, hv_sr, hv_combined = get_mean_preferred_dirs(agents, platform_idx=18, nb_trials=4)
         ax1, ax2, ax3, ax4, fig = plot_mean_arrows(agents, res2_mf, res2_allo, res2_sr, res2_combined, nb_trials=4)
@@ -348,7 +354,7 @@ def plot_main_pearce_quivs(agents, results_folder):
     plt.savefig(os.path.join(figure_folder, 'mean_strats_trial4.png'))
     plt.show()
 
-    # plot a second quiver, showing the heading-vectors after a platform location shift (state 18 to 48) and no training
+    # plot a second set of quivers, showing the heading-vectors after a platform location shift (state 18 to 48) and no training
     if str(type(agents[0])) != "<class 'agents.dolle_agent.DolleAgent'>" :
         hv_mf, hv_allo, hv_sr, hv_combined = get_mean_preferred_dirs(agents, platform_idx=48, nb_trials=0)
         ax1, ax2, ax3, ax4, fig = plot_mean_arrows(agents, hv_mf, hv_allo, hv_sr, hv_combined, nb_trials=0)
@@ -363,11 +369,13 @@ def plot_main_pearce_quivs(agents, results_folder):
 
 def create_single_agent_plot(agent, agent_df, results_folder, n_agent):
     """
-    Saves in results_folder figures showing the performances of a single agent
+    Saves figures showing the performances of a single agent
 
-    :param agent_df: Dataframe containing agents' and environment's variable from results_folder
+    :param agent: the Agent object
+    :type agent: Agent
+    :param agent_df: Dataframe containing agent's and environment's variable
     :type agent_df: pandas dataframe
-    :param results_folder: path of the results folder
+    :param results_folder: path of the results folder to store the plots
     :type results_folder: str
     :param n_agent: the id of the agent
     :type n_agent: int
@@ -376,14 +384,14 @@ def create_single_agent_plot(agent, agent_df, results_folder, n_agent):
     figure_folder = os.path.join(results_folder, 'figs')
     first_and_last = agent_df[np.logical_or(agent_df.trial == 0, agent_df.trial == 3)]
 
-    # save a plot of the evolution of escape time across sessions (two line for first and last trials)
+    # save a plot of the evolution of escape time across sessions (two lines, for first and last trials)
     fig = plt.figure()
     ax = sns.lineplot(data=first_and_last, x='session', y='escape time', hue='trial')
     plt.title('Agent n {}'.format(n_agent))
     plt.savefig(os.path.join(figure_folder, 'agent{}.png'.format(n_agent)))
     plt.close()
 
-    # saves a quiver showing the heading-vectors of the preferred direction of the agent at each state of the maze
+    # saves quivers showing the heading-vectors of the preferred direction of the agent at each state of the maze
     # four quivers / four strategies : egocentric MF, allocentric MF, Goal-Directed, coordination model
     if str(type(agent)) != "<class 'agents.dolle_agent.DolleAgent'>" :
         res2_mf, res2_allo, res2_sr, res2_combined = get_mean_preferred_dirs([agent])
@@ -400,14 +408,13 @@ def plot_pearce(maze_size, n_trials, n_sessions, n_agents, mf_allo, sr_lr, q_lr,
     Plot the evolution of the escape time across sessions, for both the control and HPC-lesiond group.
     For each simulated group, plot a line for the first trial and another for the last.
     Option to show the confidence interval (see param ci)
-    Display the summed Mean Square Error of the four lines relatve to original data from Pearce
+    Display the summed Mean Square Error of the four lines relative to the original data from Pearce
 
-    Mostly identical parameters to plot_main_pearce with an additional one
+    Mostly identical parameters to perform_main_pearce() with an additional one
     :param ci: confidence interval (between 0. and 1.)
     :type ci: float
     """
 
-    # Path defining
     results_folder_normal = create_path_main_pearce(maze_size, n_trials, n_sessions, n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A_alpha, A_beta, landmark_dist, HPCmode, time_limit, edge_states, False, False, dolle, inv_temp=inv_temp, inv_temp_gd=inv_temp_gd, inv_temp_mf=inv_temp_mf, arbi_inv_temp = arbi_inv_temp)
     results_folder_lesion = create_path_main_pearce(maze_size, n_trials, n_sessions, n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A_alpha, A_beta, landmark_dist, HPCmode, time_limit, edge_states, True, False, dolle, inv_temp=inv_temp, inv_temp_gd=inv_temp_gd, inv_temp_mf=inv_temp_mf, arbi_inv_temp = arbi_inv_temp)
 
@@ -444,7 +451,7 @@ def plot_pearce(maze_size, n_trials, n_sessions, n_agents, mf_allo, sr_lr, q_lr,
     fig, axs = plt.subplots(1, 3, figsize=(18,5))
     fig.suptitle("Escape time as a function of sessions and trials", fontsize=20, y = 1.1)
 
-    # first, plots the original results of Pearce and the replication of Geerts
+    # first, plots the original results of Pearce and its replication by Geerts 2020
     axs[0].imshow(mpimg.imread("../images/results_pearce.jpg"),aspect="auto")
     axs[1].imshow(mpimg.imread("../images/geerts_exp_1.jpg"),aspect="auto")
     axs[0].set_xticks([])
@@ -485,7 +492,7 @@ def plot_pearce(maze_size, n_trials, n_sessions, n_agents, mf_allo, sr_lr, q_lr,
     axs[2].plot(aspect="auto")
     axs[2].xaxis.set_major_locator(matplotlib.ticker.MultipleLocator(1))
 
-    # Plot the MSE of the four lines relative to Perce original data
+    # Plot the MSE of the four lines relative to Pearce original data
     if experimental_data is not None:
         # Pearce data
         real_data = experimental_data
@@ -500,3 +507,78 @@ def plot_pearce(maze_size, n_trials, n_sessions, n_agents, mf_allo, sr_lr, q_lr,
         print("Mean Square Error: ", se)
         plt.show()
         plt.close()
+
+
+def get_maze(maze_size, landmark_dist, edge_states):
+    """
+    Create the environment to simulate Pearce's task
+    :param maze_size: diameter of the Morris pool (number of states). 10 is used in Geerts' and our work
+    :type maze_size: int
+    :param landmark_dist: number of states separating the landmark from the platform
+    :type landmark_dist: int
+    :param edge_states: list of eligible starting states
+    :type edge_states: list of int
+    """
+    if maze_size == 6:
+        possible_platform_states = np.array([48, 51, 54, 57, 60, 39, 42, 45])
+        envi = HexWaterMaze(6, landmark_dist, edge_states)
+        return possible_platform_states, envi
+    if maze_size == 10:
+        # [192, 185, 181, 174, 216, 210, 203, 197] is Geerts version
+        possible_platform_states = np.array([48, 52, 118, 122, 126, 94, 98, 44])
+        envi = HexWaterMaze(10, landmark_dist, edge_states)
+        return possible_platform_states, envi
+    if maze_size == 12:
+        possible_platform_states = np.array([300, 292, 284, 277, 329, 321, 313, 306])
+        envi = HexWaterMaze(12, landmark_dist, edge_states)
+        return possible_platform_states, envi
+
+def create_path_main_pearce(maze_size, n_trials, n_sessions, n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A_alpha, A_beta, landmark_dist, HPCmode, time_limit, edge_states, lesion_HPC, lesion_DLS, dolle, inv_temp=None, inv_temp_gd=None, inv_temp_mf=None, arbi_inv_temp = None, directory=None):
+    """
+    Create a path to the directory where the data of all agents from a group of
+    simulations with identical parameters has been stored
+
+    Identical parameters to perform_main_pearce()
+    :returns: the path of the results folder
+    :return type: str
+    """
+    path = create_path(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A_alpha, A_beta, landmark_dist, HPCmode, time_limit, edge_states, lesion_HPC, lesion_DLS, dolle, inv_temp=inv_temp, inv_temp_gd=inv_temp_gd, inv_temp_mf=inv_temp_mf, arbi_inv_temp = arbi_inv_temp)
+    path = str(maze_size)+str(n_trials)+str(n_sessions)+path
+    if directory is not None:  # used for the grid-search, where the user gives a name to a hierarchically higher directory
+        path = directory+"/"+path
+    return path
+
+
+def determine_platform_seq(env, platform_states, n_sessions):
+    """
+    Recursive function that create a platform random sequence but respecting certain rules.
+    The rules are that a platform should not occur too much in the sequence (see code for exact rule), and
+    that shift of the platform between sessions should only occur between far enough platforms.
+
+    :param env: the environment
+    :type env: HexWaterMaze
+    :param platform_states: the eligible platform states
+    :type platform_states: int list
+    :param n_sessions: the number of shift from a platform to another
+    :type n_sessions: int
+
+    :returns: The random platform sequence
+    :return type: int list
+    """
+
+    plat_seq = None # to be returned
+    try:
+        indices = np.arange(len(platform_states))
+        usage = np.zeros(len(platform_states)) # keep track of platform occurence in the sequence to return
+        plat_seq = [np.random.choice(platform_states)]
+        for sess in range(1, n_sessions):
+            distances = np.array([env.grid.distance(plat_seq[sess - 1], s) for s in platform_states])
+            # keep only platform apart from last platform and with a low number of occurence in the sequence
+            candidates = indices[np.logical_and(usage < n_sessions/8+1, distances > env.grid.radius*0.8)]
+            platform_idx = np.random.choice(candidates)
+            plat_seq.append(platform_states[platform_idx])
+            usage[platform_idx] += 1.
+    except Exception: # can happen if no candidate is encountered (far enough platforms were all selected too much in the past)
+        return determine_platform_seq(env, platform_states, n_sessions)
+
+    return plat_seq

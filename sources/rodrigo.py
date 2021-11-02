@@ -1,7 +1,7 @@
 from agents.dolle_agent import DolleAgent
 from agents.fusion_agent import CombinedAgent
 from environments.HexWaterMaze import HexWaterMaze
-from utils import create_path, create_df, get_coords, isinoctan, get_mean_occupation_octan, get_octant_mean_occupation
+from utils import create_path, create_df, get_coords, isinoctan
 
 from IPython.display import clear_output
 from statsmodels.formula.api import ols
@@ -353,11 +353,9 @@ def run_statistical_tests_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, al
     helmert_rodrigo_0vs_results_p = []
     helmert_rodrigo_45vs_results_p = []
     helmert_rodrigo_90vs_results_p = []
-    #helmert_rodrigo_135vs_results_p = []
     helmert_rodrigo_0vs_results_d = []
     helmert_rodrigo_45vs_results_d = []
     helmert_rodrigo_90vs_results_d = []
-    #helmert_rodrigo_135vs_results_d = []
     anova_rodrigo_results = []
     ttest_rodrigo_results = []
 
@@ -455,6 +453,29 @@ def plot_rodrigo(results_folder, n_agents):
 
     plt.show()
     plt.close()
+
+
+def get_mean_occupation_octant(angle, df_analysis, coords):
+    """
+    Compute and return the mean proportion of occupancy of both the proximal beacon and distal beacon octants, on test trials,
+    at a specific angle of the proximal landmark rotation.
+
+    :param angle: the angle of the proximal landmark rotation on the test condition. Either 0°, 45°, 90°, 135° or 180°
+    :type angle: int
+    :param df_analysis: the DataFrame containing data of all agents simulated
+    :type df_analysis: pandas DataFrame
+    :param coords: a dictionary linking states to cartesian coordinates
+    :type coords: dict
+    :return type: pandas DataFrame
+    """
+    df = df_analysis[np.logical_or(df_analysis["angle"]==str(angle), df_analysis["angle"]==str(-angle))]
+    df['angle'] = angle
+    df['isinoctant_distal'] = df.apply(lambda row: isinoctan(coords[row.state], [float(row.distal_posx), float(row.distal_posy)]), axis=1)
+    df['isinoctant_proximal'] = df.apply(lambda row: isinoctan(coords[row.state], [float(row.beacon_posx), float(row.beacon_posy)]), axis=1)
+    df_res = df.groupby("agent").mean()
+    df_res['isinoctant_distal'] = df_res['isinoctant_distal'].replace(np.inf, 0)
+    df_res['isinoctant_proximal'] = df_res['isinoctant_proximal'].replace(np.inf, 0)
+    return df_res
 
 
 def get_meanin_octan(df, coords):

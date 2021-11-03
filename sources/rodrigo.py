@@ -1,7 +1,7 @@
 from agents.dolle_agent import DolleAgent
 from agents.fusion_agent import CombinedAgent
 from environments.HexWaterMaze import HexWaterMaze
-from utils import create_path, create_df, get_coords, isinoctan
+from utils import create_path, create_df, get_coords, isinoctant
 
 from IPython.display import clear_output
 from statsmodels.formula.api import ols
@@ -178,8 +178,8 @@ def perform_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A
                 res['total trial'] = total_trial_count
                 res["cond"] = "pretraining"
                 res['angle'] = "pretraining"
-                res["beacon_posx"] = "pretraining"
-                res["beacon_posy"] = "pretraining"
+                res["proximal_posx"] = "pretraining"
+                res["proximal_posy"] = "pretraining"
                 res["distal_posx"] = "pretraining"
                 res["distal_posy"] = "pretraining"
                 agent_df=agent_df.append(res, ignore_index=True)
@@ -190,6 +190,8 @@ def perform_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A
             # the platform is only chosen once at the beginning of session 1
             platform_state = random.choice(possible_platforms)
             envi.set_platform_state(platform_state)
+            envi.set_proximal_landmark()
+            envi.set_distal_landmark()
             for ses in range(n_sessions1):
                 for trial in range(n_trials1):
                     if verbose:
@@ -204,8 +206,8 @@ def perform_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A
                     res['total trial'] = total_trial_count
                     res["cond"] = "escape"
                     res['angle'] = "session1"
-                    res["beacon_posx"] = envi.landmark_location[0]
-                    res["beacon_posy"] = envi.landmark_location[1]
+                    res["proximal_posx"] = envi.proximal_landmark_location[0]
+                    res["proximal_posy"] = envi.proximal_landmark_location[1]
                     res["distal_posx"] = envi.distal_landmark_location[0]
                     res["distal_posy"] = envi.distal_landmark_location[1]
                     agent_df = agent_df.append(res, ignore_index=True)
@@ -241,8 +243,8 @@ def perform_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A
                         # put platform and proximal landmark at normal again
                         envi.set_platform_state(platform_state)
                         envi.set_proximal_landmark()
-                        res["beacon_posx"] = "extinction"
-                        res["beacon_posy"] = "extinction"
+                        res["proximal_posx"] = "extinction"
+                        res["proximal_posy"] = "extinction"
                         res["distal_posx"] = "extinction"
                         res["distal_posy"] = "extinction"
                         res["cond"] = "extinction"
@@ -250,22 +252,22 @@ def perform_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A
 
                     elif special_trial == trial and cond == "test":
                         envi.delete_plaform()
-                        envi.set_angle_beacon(angles[ses]) # rotate the proximal landmark
-                        res = envi.one_episode(agent, time_limit/2, random_policy=False)
-                        # put platform and proximal landmark at normal again
-                        envi.set_platform_state(platform_state)
-                        envi.set_proximal_landmark()
-                        res["beacon_posx"] = envi.landmark_location[0]
-                        res["beacon_posy"] = envi.landmark_location[1]
+                        envi.set_angle_proximal_beacon(angles[ses]) # rotate the proximal landmark
+                        res = envi.one_episode(agent, time_limit/2)
+                        res["proximal_posx"] = envi.proximal_landmark_location[0]
+                        res["proximal_posy"] = envi.proximal_landmark_location[1]
                         res["distal_posx"] = envi.distal_landmark_location[0]
                         res["distal_posy"] = envi.distal_landmark_location[1]
                         res["cond"] = "test"
                         res['angle'] = angles[ses]
+                        # put platform and proximal landmark at normal again
+                        envi.set_platform_state(platform_state)
+                        envi.set_proximal_landmark()
 
                     else: # normal trial
-                        res = envi.one_episode(agent, time_limit, random_policy=False)
-                        res["beacon_posx"] = envi.landmark_location[0]
-                        res["beacon_posy"] = envi.landmark_location[1]
+                        res = envi.one_episode(agent, time_limit)
+                        res["proximal_posx"] = envi.proximal_landmark_location[0]
+                        res["proximal_posy"] = envi.proximal_landmark_location[1]
                         res["distal_posx"] = envi.distal_landmark_location[0]
                         res["distal_posy"] = envi.distal_landmark_location[1]
                         res["cond"] = "escape"
@@ -306,34 +308,26 @@ def perform_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A
         plot_rodrigo(saved_results_folder, n_agents)
 
     # delete all agents, to prevent memory error
-    if 'agents' in local():
+    if 'agents' in locals():
         for i in agents:
             del i
         del agents
 
-    # check and print if the group of simulations at results_folder validate the multiple required statistical test, originally performed in rodrigo 2006
-    if dolle is False:
-        run_statistical_tests_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A_alpha, A_beta, landmark_dist, HPCmode, time_limit, edge_states, lesion_HPC, lesion_DLS, dolle, inv_temp = inv_temp)
-    else:
-        run_statistical_tests_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A_alpha, A_beta, landmark_dist, HPCmode, time_limit, edge_states, lesion_HPC, lesion_DLS, dolle, inv_temp_gd = inv_temp_gd, inv_temp_mf = inv_temp_mf, arbi_inv_temp = arbi_inv_temp)
-
-
-def run_statistical_tests_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A_alpha, A_beta, landmark_dist, HPCmode, time_limit, edge_states, lesion_HPC, lesion_DLS, dolle=False, arbi_inv_temp = None, create_plots = True, save_agents=True, inv_temp=None, inv_temp_gd=None, inv_temp_mf=None, directory=None, verbose=True):
+def run_statistical_tests_rodrigo(path, n_agents):
     """
     Check and print if a group of agents validate multiple statistical test,
     originally performed in rodrigo 2006 (Helmert contrasts, ANOVAs, TTests)
 
-    Identical parameters to perform_rodrigo()
+    :param path: path where the simulation data to analyse is stored
+    :type path: str
     """
     coords = get_coords() # associate each state of the water-maze with a cartesian coordinate
     df_analysis = pd.DataFrame()
     agents_df_lst = []
-    # path where the simulation data to analyse is stored
-    path = create_path_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A_alpha, A_beta, landmark_dist, HPCmode, time_limit, edge_states, lesion_HPC, lesion_DLS, dolle, inv_temp=inv_temp, inv_temp_gd=inv_temp_gd, inv_temp_mf=inv_temp_mf, arbi_inv_temp = arbi_inv_temp, directory=directory)
 
-    for agent_ind in range(100):
+    for agent_ind in range(n_agents):
         print("agent: "+ str(agent_ind), end="\r")
-        one_agent_df = pd.read_csv("../saved_results/"+path+"/agent"+str(agent_ind)+".csv")
+        one_agent_df = pd.read_csv(path+"/agent"+str(agent_ind)+".csv")
         one_agent_df["agent"] = agent_ind
         one_agent_df = one_agent_df[one_agent_df["cond"] == "test"]
         agents_df_lst.append(one_agent_df)
@@ -342,11 +336,11 @@ def run_statistical_tests_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, al
     df_analysis = pd.concat(agents_df_lst)
 
     print("Computing proximal and distal octants mean occupation on test episodes")
-    dist0 = get_octant_mean_occupation(0, df_analysis, coords)
-    dist45 = get_octant_mean_occupation(45, df_analysis, coords)
-    dist90 = get_octant_mean_occupation(90, df_analysis, coords)
-    dist135 = get_octant_mean_occupation(135, df_analysis, coords)
-    dist180 = get_octant_mean_occupation(180, df_analysis, coords)
+    dist0 = get_mean_occupation_octant(0, df_analysis, coords)
+    dist45 = get_mean_occupation_octant(45, df_analysis, coords)
+    dist90 = get_mean_occupation_octant(90, df_analysis, coords)
+    dist135 = get_mean_occupation_octant(135, df_analysis, coords)
+    dist180 = get_mean_occupation_octant(180, df_analysis, coords)
 
     octant_occup_df = pd.concat([dist0, dist45, dist90, dist135, dist180], ignore_index=False)
 
@@ -367,27 +361,27 @@ def run_statistical_tests_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, al
     cluster_df = cluster_df.reset_index()
 
     # HELMERT TESTS
-    helmert_p = lambda lst : ols("isinoctan_proximal ~ C(angle, Helmert)", data=cluster_df[cluster_df["angle"].isin(lst)]).fit()
+    helmert_p = lambda lst : ols("isinoctant_proximal ~ C(angle, Helmert)", data=cluster_df[cluster_df["angle"].isin(lst)]).fit()
     helmert_rodrigo_0vs_results_p.append(helmert_p([0,45,90,135,180]).f_pvalue < p)
     helmert_rodrigo_45vs_results_p.append(helmert_p([45,90,135,180]).f_pvalue < p)
     helmert_rodrigo_90vs_results_p.append(helmert_p([90,135,180]).f_pvalue < p)
 
     # HELMERT TESTS
-    helmert_d = lambda lst : ols("isinoctan_distal ~ C(angle, Helmert)", data=cluster_df[cluster_df["angle"].isin(lst)]).fit()
+    helmert_d = lambda lst : ols("isinoctant_distal ~ C(angle, Helmert)", data=cluster_df[cluster_df["angle"].isin(lst)]).fit()
     helmert_rodrigo_0vs_results_d.append(helmert_d([0,45,90,135,180]).f_pvalue < p)
     helmert_rodrigo_45vs_results_d.append(helmert_d([45,90,135,180]).f_pvalue < p)
     helmert_rodrigo_90vs_results_d.append(helmert_d([90,135,180]).f_pvalue < p)
 
     # ANOVA
-    model = ols('isinoctan_proximal ~ C(angle) + C(angle) + C(angle):C(angle)', data=cluster_df).fit()
+    model = ols('isinoctant_proximal ~ C(angle) + C(angle) + C(angle):C(angle)', data=cluster_df).fit()
     tmp = sm.stats.anova_lm(model, typ=2)
-    model2 = ols('isinoctan_distal ~ C(angle) + C(angle) + C(angle):C(angle)', data=cluster_df).fit()
+    model2 = ols('isinoctant_distal ~ C(angle) + C(angle) + C(angle):C(angle)', data=cluster_df).fit()
     tmp2 = sm.stats.anova_lm(model2, typ=2)
     anova_rodrigo_results.append(tmp["PR(>F)"]["C(angle)"]<p and tmp2["PR(>F)"]["C(angle)"]<p)
 
     # TTESTS
-    ttest = lambda ang : stats.ttest_1samp(cluster_df[cluster_df["angle"] == ang].groupby("agent").mean()["isinoctan_proximal"],0.125).pvalue
-    ttest2 = lambda ang : stats.ttest_1samp(cluster_df[cluster_df["angle"] == ang].groupby("agent").mean()["isinoctan_distal"],0.125).pvalue
+    ttest = lambda ang : stats.ttest_1samp(cluster_df[cluster_df["angle"] == ang].groupby("agent").mean()["isinoctant_proximal"],0.125).pvalue
+    ttest2 = lambda ang : stats.ttest_1samp(cluster_df[cluster_df["angle"] == ang].groupby("agent").mean()["isinoctant_distal"],0.125).pvalue
     ttest_rodrigo_results.append(ttest(0) < p and ttest(45) < p and ttest(90) < p and ttest(135) < p and ttest(180) < p and ttest2(0) < p and ttest2(45) < p)
     print("Helmert tests")
     print("p < 0.05 on 0° versus others (proximal beacon): ", helmert_p([0,45,90,135,180]).f_pvalue < p)
@@ -430,13 +424,13 @@ def plot_rodrigo(results_folder, n_agents):
     fig, axs = plt.subplots(2, 2, figsize=(15,12))
 
     axs[0,0].set_title("Original results")
-    axs[0,0].imshow(mpimg.imread("images/results_rodrigo_proximal.jpg"))
+    axs[0,0].imshow(mpimg.imread("../images/results_rodrigo_proximal.jpg"))
     axs[0,0].set_xticks([])
     axs[0,0].set_yticks([])
     axs[0,0].set_frame_on(False)
     axs[0,0].plot(aspect="auto")
 
-    axs[1,0].imshow(mpimg.imread("images/results_rodrigo_distal.jpg"))
+    axs[1,0].imshow(mpimg.imread("../images/results_rodrigo_distal.jpg"))
     axs[1,0].set_xticks([])
     axs[1,0].set_yticks([])
     axs[1,0].set_frame_on(False)
@@ -453,6 +447,12 @@ def plot_rodrigo(results_folder, n_agents):
 
     plt.show()
     plt.close()
+    run_statistical_tests_rodrigo(results_folder, n_agents)
+    # check and print if the group of simulations at results_folder validate the multiple required statistical test, originally performed in rodrigo 2006
+    # try:
+    #     run_statistical_tests_rodrigo(results_folder)
+    # except:
+    #     print("Statical analysis failed (there might not be enough data)")
 
 
 def get_mean_occupation_octant(angle, df_analysis, coords):
@@ -470,15 +470,15 @@ def get_mean_occupation_octant(angle, df_analysis, coords):
     """
     df = df_analysis[np.logical_or(df_analysis["angle"]==str(angle), df_analysis["angle"]==str(-angle))]
     df['angle'] = angle
-    df['isinoctant_distal'] = df.apply(lambda row: isinoctan(coords[row.state], [float(row.distal_posx), float(row.distal_posy)]), axis=1)
-    df['isinoctant_proximal'] = df.apply(lambda row: isinoctan(coords[row.state], [float(row.beacon_posx), float(row.beacon_posy)]), axis=1)
+    df['isinoctant_distal'] = df.apply(lambda row: isinoctant(coords[row.state], [float(row.distal_posx), float(row.distal_posy)]), axis=1)
+    df['isinoctant_proximal'] = df.apply(lambda row: isinoctant(coords[row.state], [float(row.proximal_posx), float(row.proximal_posy)]), axis=1)
     df_res = df.groupby("agent").mean()
     df_res['isinoctant_distal'] = df_res['isinoctant_distal'].replace(np.inf, 0)
     df_res['isinoctant_proximal'] = df_res['isinoctant_proximal'].replace(np.inf, 0)
     return df_res
 
 
-def get_meanin_octan(df, coords):
+def get_meanin_octant(df, coords):
     """
     Compute and returns the mean proportion of occupation of the proximal and distal beacons at a specific angle of
     rotation of the proximal beacons, and the confidence interval for both measurements
@@ -489,15 +489,15 @@ def get_meanin_octan(df, coords):
     :return type: tuple of four floats
     """
 
-    df['isinoctan_distal'] = df.apply(lambda row: isinoctan(coords[row.state], [float(row.distal_posx), float(row.distal_posy)]), axis=1)
-    df['isinoctan_proximal'] = df.apply(lambda row: isinoctan(coords[row.state], [float(row.beacon_posx), float(row.beacon_posy)]), axis=1)
+    df['isinoctant_distal'] = df.apply(lambda row: isinoctant(coords[row.state], [float(row.distal_posx), float(row.distal_posy)]), axis=1)
+    df['isinoctant_proximal'] = df.apply(lambda row: isinoctant(coords[row.state], [float(row.proximal_posx), float(row.proximal_posy)]), axis=1)
 
-    df_dist = df.groupby("agent")['isinoctan_distal'].apply(lambda x: np.sum(x)/250)
+    df_dist = df.groupby("agent")['isinoctant_distal'].apply(lambda x: np.sum(x)/250)
     df_dist = df_dist.replace(np.inf, 0)
     mean_distal = np.asarray(df_dist, dtype=np.float64).mean()
     yerr_distal = df_dist.std()/ np.sqrt(df_dist.shape[0])*1.96
 
-    df_prox = df.groupby("agent")['isinoctan_proximal'].apply(lambda x: np.sum(x)/250)
+    df_prox = df.groupby("agent")['isinoctant_proximal'].apply(lambda x: np.sum(x)/250)
     df_prox = df_prox.replace(np.inf, 0)
     mean_proximal = np.asarray(df_prox, dtype=np.float64).mean()
     yerr_proximal = df_prox.std()/ np.sqrt(df_prox.shape[0])*1.96
@@ -524,11 +524,11 @@ def get_values_rodrigo(results_folder, n_agents):
     df90 = df[np.logical_or(df["angle"]=="90", df["angle"]=="-90")]
     df135 = df[np.logical_or(df["angle"]=="135", df["angle"]=="-135")]
     df180 = df[np.logical_or(df["angle"]=="180", df["angle"]=="-180")]
-    dist0, prox0, ydist0, yprox0 = get_meanin_octan(df0, coords)
-    dist45, prox45, ydist45, yprox45 = get_meanin_octan(df45, coords)
-    dist90, prox90, ydist90, yprox90 = get_meanin_octan(df90, coords)
-    dist135, prox135, ydist135, yprox135 = get_meanin_octan(df135, coords)
-    dist180, prox180, ydist180, yprox180 = get_meanin_octan(df180, coords)
+    dist0, prox0, ydist0, yprox0 = get_meanin_octant(df0, coords)
+    dist45, prox45, ydist45, yprox45 = get_meanin_octant(df45, coords)
+    dist90, prox90, ydist90, yprox90 = get_meanin_octant(df90, coords)
+    dist135, prox135, ydist135, yprox135 = get_meanin_octant(df135, coords)
+    dist180, prox180, ydist180, yprox180 = get_meanin_octant(df180, coords)
 
     return dist0, dist45, dist90, dist135, dist180, prox0, prox45, prox90, prox135, prox180, ydist0, ydist45, ydist90, ydist135, ydist180, yprox0, yprox45, yprox90, yprox135, yprox180
 
@@ -540,7 +540,7 @@ def get_rodrigo_platforms_pretraining(possible_platforms):
     :type possible_platforms: int list
     :return type: int list
     """
-    return = random.sample(possible_platforms, 4) + [random.choice(possible_platforms)]
+    return  random.sample(possible_platforms, 4) + [random.choice(possible_platforms)]
 
 
 def get_maze_rodrigo(maze_size, landmark_dist, edge_states):

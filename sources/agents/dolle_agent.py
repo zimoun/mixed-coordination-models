@@ -65,7 +65,7 @@ class DolleAgent(Agent, AssociativeAgent):
         if init_sr != 'zero' and init_sr != 'rw' and init_sr != 'identity':
             raise Exception("init_sr should be set to either 'zero', 'rw' or 'identity'")
 
-        Agent().__init__(env=env, gamma=gamma, learning_rate=learning_rate, inv_temp=arbi_inv_temp)
+        super().__init__(env=env, gamma=gamma, learning_rate=learning_rate, inv_temp=arbi_inv_temp)
 
         self.inv_temp_gd = inv_temp_gd
         self.inv_temp_mf = inv_temp_mf
@@ -142,9 +142,9 @@ class DolleAgent(Agent, AssociativeAgent):
 
         # selection of preferred action
         if decision_arbi == 0 or self.lesion_PFC == True:
-            allo_a = self.softmax_selection(state_index=s, Q=Q, nbr_actions=6, inv_temp=self.DLS.inv_temp)
+            allo_a = self.softmax_selection(Q=Q, inv_temp=self.DLS.inv_temp)
         else:
-            allo_a = self.softmax_selection(state_index=s, Q=Q, nbr_actions=6, inv_temp=self.HPC.inv_temp)
+            allo_a = self.softmax_selection(Q=Q, inv_temp=self.HPC.inv_temp)
 
         self.last_decision_arbi = decision_arbi
         ego_a = self.DLS.get_ego_action(allo_a, orientation)
@@ -263,7 +263,7 @@ class DolleAgent(Agent, AssociativeAgent):
         # Select navigation expert
         features_arb = self.get_feature_rep(state_idx)
         Q_arbi = self.weights.T @ features_arb
-        decision_arbitrator = self.softmax_selection(state_index=state_idx, Q=Q_arbi, nbr_actions=2, inv_temp=self.inv_temp)
+        decision_arbitrator = self.softmax_selection(Q=Q_arbi, inv_temp=self.inv_temp)
 
         if decision_arbitrator == 0 or self.lesion_PFC == True:
             Q = Q_allo

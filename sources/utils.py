@@ -1,4 +1,5 @@
 import os
+import pickle
 import numpy as np
 import pandas as pd
 from decimal import Decimal
@@ -89,7 +90,7 @@ def get_best_action(agent, agent_pos):
         possible_orientations = np.round(np.degrees(agent.env.action_directions)) # retrieve the 6 possible orientations of the agent
         angles = []
         for i, o in enumerate(possible_orientations): # get angle of the landmark considering each possible orientation of the agent
-            angle = angle_to_landmark(agent.env.get_state_location(agent_pos), agent.env.landmark_location, np.radians(o))
+            angle = angle_to_landmark(agent.env.get_state_location(agent_pos), agent.env.proximal_landmark_location, np.radians(o))
             angles.append(angle)
         # orientation of the agent is set to the one in which its angle to the landmark is the smallest
         agent.env.agent_orientation = possible_orientations[np.argmin(np.abs(angles))]
@@ -137,6 +138,8 @@ def get_mean_preferred_dirs(agents_lst, platform_idx=None, nb_trials=None):
     if platform_idx is not None:
         for agent in agents_lst:
             agent.env.set_platform_state(platform_idx)
+            agent.env.delete_distal_landmark()
+            agent.env.set_proximal_landmark()
             for i in range(nb_trials):
                 agent.env.one_episode(agent, 500)
 
@@ -236,7 +239,7 @@ def plot_mean_arrows(agents_lst, prefvectors_mf, prefvectors_allo, prefvectors_s
 
     platform_idx = agent.env.platform_state
     platform_coord = agent.env.grid.cart_coords[platform_idx]
-    landmark_coord = agent.env.landmark_location
+    landmark_coord = agent.env.proximal_landmark_location
 
     if str(type(agents_lst[0])) != "<class 'agents.dolle_agent.DolleAgent'>" :
         p_sr = 0
@@ -313,7 +316,10 @@ def plot_mean_arrows(agents_lst, prefvectors_mf, prefvectors_allo, prefvectors_s
     ax4.grid()
     ax4.plot(platform_coord[0], platform_coord[1],'-or', label="platform (s"+str(platform_idx)+")")
     ax4.plot(landmark_coord[0], landmark_coord[1],'-ob', label="landmark")
-    ax4.title.set_text('Mean preferred action for each state (allo_mf and GD combined), P(GD)= '+ str(round(p_sr,2)))
+    if str(type(agents_lst[0])) == "<class 'agents.dolle_agent.DolleAgent'>" :
+        ax4.title.set_text('Mean preferred action for each state (allo_mf and GD combined)')
+    else:
+        ax4.title.set_text('Mean preferred action for each state (allo_mf and GD combined), P(GD)= '+ str(round(p_sr,2)))
     ax4.legend()
     ax4.set_xlabel('x')
     ax4.set_ylabel('y')
@@ -346,8 +352,8 @@ def charge_agents(path):
 
 # return a dictionary associating the 270 states of the water-maze to cartesian coordinates
 def get_coords():
-    possible_platform_states, g = get_maze(10, 4, [243,230,270,257])
-    coords = g.grid.cart_coords
+    env = HexWaterMaze(10, 4, [243,230,270,257])
+    coords = env.grid.cart_coords
     return coords
 
 
@@ -380,7 +386,9 @@ def create_df(path, n_agents, grouped=False):
     Retrieve a DataFrame containing a group of agents and envionments variables at each timestep of their respective simulations
     The rows can be grouped and averaged by agents, sessions and trials (optional, see param grouped)
     """
-    if os.path.exists("../results/"+path):
+    if os.path.exists(path):
+        saved_results_folder = path
+    elif os.path.exists("../results/"+path):
         saved_results_folder = "../results/"+path
     else:
         saved_results_folder = "../saved_results/"+path

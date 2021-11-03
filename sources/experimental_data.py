@@ -1,6 +1,6 @@
 import matplotlib
 import numpy as np
-from added import mpimg
+import matplotlib.image as mpimg
 from matplotlib import pyplot as plt
 
 # displays alongside : 1) a picture of the experimental data from pearce original article

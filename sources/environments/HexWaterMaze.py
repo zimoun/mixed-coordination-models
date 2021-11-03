@@ -26,7 +26,7 @@ class Environment(object):
         self.terminal_state = None
         self.state_indices = None
         self.current_state = None
-        self.landmark_location = None
+        self.proximal_landmark_location = None
         self.grid = None
         self.ego_angles = None
         self.allo_angles = None
@@ -270,6 +270,7 @@ class HexWaterMaze(Environment):
     """Model of a Morris water-maze pool which consist in a hexagonal grid with discrete states.
     Possess 3 dimensions which can be translated as 2D cartesian coordinates. Is used for the simulation of rats
     spatial navigation experiments such as Pearce 1998 and Rodrigo 2006.
+    Allows to create and remove hidden platforms as well as distal and proximal visual landmarks.
     Several functions in the following lines of code were entirely copied or strongly inspired from the original code of Geerts 2020.
     """
     def __init__(self, radius, landmark_dist, edge_states):
@@ -297,7 +298,7 @@ class HexWaterMaze(Environment):
         self.set_reward_func()
         # MODIF
         self.landmark_dist = landmark_dist
-        self.set_landmark()
+        self.set_proximal_landmark()
         self.set_distal_landmark()
         self.starting_state = 0
         self.allo_angles = np.array([30, 90, 150, 210, 270, 330])
@@ -308,8 +309,6 @@ class HexWaterMaze(Environment):
     def set_platform_state(self, state_idx):
         self.previous_platform_state = self.platform_state
         self.platform_state = state_idx
-        self.set_landmark()
-        self.set_distal_landmark()
         self.set_reward_func()
 
     def add_terminal(self, state):
@@ -321,13 +320,13 @@ class HexWaterMaze(Environment):
                 next_state, reward = self.get_next_state_and_reward(state, action)
                 self.reward_func[state, action, next_state] = reward
 
-    def set_landmark(self): # set landmark next to the platform
+    def set_proximal_landmark(self): # set landmark next to the platform
 
         platform_loc = self.grid.cube_coords[self.platform_state]
         # the hexagonal grid has 3 dimensions
         # here the second dimension is considered as the Y dimension of a cartesian coordinate system
         landmark_loc = (platform_loc[0], platform_loc[1]+self.landmark_dist, platform_loc[2])
-        self.landmark_location = self.grid.to_cartesian(landmark_loc)
+        self.proximal_landmark_location = self.grid.to_cartesian(landmark_loc)
 
     def set_distal_landmark(self):
 
@@ -382,7 +381,7 @@ class HexWaterMaze(Environment):
         self.current_state = self.starting_state
 
         # orient agent
-        if self.landmark_location is not None:
+        if self.proximal_landmark_location is not None:
             self.orient_agent_to_platform()
 
     def get_state_location(self, state, cube_system=False):
@@ -506,7 +505,7 @@ class HexWaterMaze(Environment):
         ax.axis('off')
         return ax
 
-    def set_angle_beacon(self, angle):
+    def set_angle_proximal_beacon(self, angle):
 
         def rotate(origin, point, angle):
             angle = math.radians(angle)
@@ -521,7 +520,7 @@ class HexWaterMaze(Environment):
             qx = ox + math.cos(angle) * (px - ox) - math.sin(angle) * (py - oy)
             qy = oy + math.sin(angle) * (px - ox) + math.cos(angle) * (py - oy)
             return qx, qy
-        self.landmark_location = rotate((0,0), self.landmark_location, angle)
+        self.proximal_landmark_location = rotate((0,0), self.proximal_landmark_location, angle)
 
 # _____________________________
 
@@ -531,7 +530,7 @@ class HexWaterMaze(Environment):
     def delete_plaform_and_landmarks(self):
         self.previous_platform_state = self.platform_state
         self.platform_state = None
-        self.landmark_location = None
+        self.proximal_landmark_location = None
         self.distal_landmark_location = None
         self.set_reward_func()
 
@@ -541,11 +540,11 @@ class HexWaterMaze(Environment):
         self.set_reward_func()
 
     def delete_landmarks(self):
-        self.landmark_location = None
+        self.proximal_landmark_location = None
         self.distal_landmark_location = None
 
     def delete_proximal_landmark(self):
-        self.landmark_location = None
+        self.proximal_landmark_location = None
 
     def delete_distal_landmark(self):
         self.distal_landmark_location = None
@@ -554,7 +553,7 @@ class HexWaterMaze(Environment):
         possible_orientations = np.round(np.degrees(self.action_directions))
         angles = []
         for i, o in enumerate(possible_orientations):
-            angle = utils.angle_to_landmark(self.get_current_state(), self.agent_orientation, self.landmark_location)
+            angle = utils.angle_to_landmark(self.get_current_state(), self.agent_orientation, self.proximal_landmark_location)
             angles.append(angle)
         orientation = possible_orientations[np.argmin(np.abs(angles))]
         self.agent_orientation = orientation
@@ -567,7 +566,7 @@ class HexWaterMaze(Environment):
         :param agent: the agent to be subjected to the episode
         :type agent: Agent
         :param time_limit: max number of timestep to find the reward, the episode is forced to end if reached
-        :type a: int
+        :type time_limit: int
 
         :returns type: float
         """

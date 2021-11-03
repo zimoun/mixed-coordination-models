@@ -26,7 +26,7 @@ class RTDP(Agent, ModelBasedAgent, FirstOrderAgent):
 
     def __init__(self, env, gamma, learning_rate, inv_temp, eta):
 
-        Agent().__init__(env, gamma, learning_rate, inv_temp)
+        super().__init__(env, gamma, learning_rate, inv_temp)
 
         self.eta = eta # to compute the model's reliability (see update_reliability())
         self.reliability = .8

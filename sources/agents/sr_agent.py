@@ -35,7 +35,7 @@ class SRTD(Agent, ModelBasedAgent, FirstOrderAgent):
 
     def __init__(self, env, gamma, learning_rate, inv_temp, eta, init_sr='identity'):
 
-        Agent().__init__(env, gamma, learning_rate, inv_temp)
+        super().__init__(env, gamma, learning_rate, inv_temp)
 
         self.reliability = .8
         self.eta = eta # to compute the model's reliability (see update_reliability())
@@ -138,10 +138,10 @@ class SRTD(Agent, ModelBasedAgent, FirstOrderAgent):
         :returns: The vector-valued error signal (SPE), indicating whether states are visited more or less often than expected
         :return type: float array
         """
-        if self.env.is_terminal(next_state):
-            SPE = self.identity[s, :] + self.identity[next_state, :] - self.M_hat[s, :]
+        if self.env.is_terminal(s):
+            SPE = self.identity[previous_state, :] + self.identity[s, :] - self.M_hat[previous_state, :]
         else:
-            SPE = self.identity[s, :] + self.gamma * self.M_hat[next_state, :] - self.M_hat[s, :]
+            SPE = self.identity[previous_state, :] + self.gamma * self.M_hat[s, :] - self.M_hat[previous_state, :]
         return SPE
 
     def compute_Q(self, state_idx):

@@ -1,7 +1,6 @@
-from rodrigo import perform_rodrigo, create_path_rodrigo, get_values_rodrigo
-from added import get_coords, create_df, create_path_main_pearce
-from main_pearce import perform_main_pearce
-from utils import isinoctan
+from rodrigo import perform_rodrigo, create_path_rodrigo, get_values_rodrigo, get_mean_occupation_octant, create_df
+from main_pearce import perform_main_pearce, create_path_main_pearce
+from utils import isinoctant, get_MSLE, get_coords
 
 from sklearn.metrics.pairwise import euclidean_distances
 from sklearn.metrics import mean_squared_log_error
@@ -95,7 +94,6 @@ def random_grid_search(directory, expe, n_datapoints, mf_allo, dolle, HPCmode, s
     res_df_tmp_rodrigo = pd.DataFrame(columns=['srlr', 'qlr', 'gamma', 'eta', 'inv_temp', "0dist", "45dist", "90dist", "135dist", "180dist", "0prox", "45prox", "90prox", "135prox", "180prox"])
 
     # if the files already exist (part of the whole grid-search is already completed)
-
     try:
         os.mkdir("../results/"+directory)
         print("Directory " , "../results/"+directory ,  " Created ")
@@ -247,7 +245,7 @@ def random_grid_search(directory, expe, n_datapoints, mf_allo, dolle, HPCmode, s
             # association (between parametes value and overflow tendancies)
             if expe == "main_pearce":
                 res_df.loc[i] = ["error", "error", "error", "error", "error", "error", "error", "error", "error"]
-            if expe == "fifth_dolle":
+            if expe == "rodrigo":
                 res_df.loc[i] = ["error", "error", "error", "error", "error", "error", "error", "error", "error", "error", "error", "error", "error", "error", "error"]
             print("An error occured: ", e)
 
@@ -258,7 +256,7 @@ def random_grid_search(directory, expe, n_datapoints, mf_allo, dolle, HPCmode, s
         print("Data point: ", i, "/",n_datapoints, ", estimated remaining time: ",time.strftime('%d:%H:%M:%S', time.gmtime(remaining_time)), end="\r")
 
 
-def compute_clusters_perfs(directory, size_cluster, experimental_data_pearce=None, experimental_data_rodrigo=None, relative=True, verbose=False):
+def compute_clusters_perfs(directory, size_cluster, experimental_data_pearce=None, experimental_data_rodrigo=None, relative=True, verbose=False, noPFC=False):
     """
         Clusterizes the agents into local groups to get the group mean performances.
         This allows to dramatically reduce noise present in the raw data, where each
@@ -295,7 +293,10 @@ def compute_clusters_perfs(directory, size_cluster, experimental_data_pearce=Non
         raise Exception("At least one set of experimental data must be provided")
 
     if experimental_data_pearce is not None:
-        df_pearce = pd.read_csv("../results/"+directory+"/mean_square_pearce_noPFC.csv")
+        if noPFC:
+            df_pearce = pd.read_csv("../results/"+directory+"/mean_square_pearce_noPFC.csv")
+        else:
+            df_pearce = pd.read_csv("../results/"+directory+"/mean_square_pearce.csv")
     if experimental_data_rodrigo is not None:
         df_rodrigo = pd.read_csv("../results/"+directory+"/mean_square_rodrigo.csv")
 
@@ -310,10 +311,10 @@ def compute_clusters_perfs(directory, size_cluster, experimental_data_pearce=Non
     if experimental_data_pearce is None:
         df_main = df_rodrigo
         # remove any lines containing an error (like hpc4, all columns are set to "error")
-        df_main = df_main[df_main["hpc4"] != "error"]
+        df_main = df_main[df_main["45dist"] != "error"]
     elif experimental_data_rodrigo is None:
         df_main = df_pearce
-        df_main = df_main[df_main["45dist"] != "error"]
+        df_main = df_main[df_main["hpc4"] != "error"]
     else:
         df_main = pd.concat([df_pearce, df_rodrigo], axis=1)
         # as df1 and df2 contains the same set of parameters
@@ -422,53 +423,6 @@ def get_euclidian_distances(res_df):
     return euclidean_distances(matrix, matrix)
 
 
-def get_MSLE(real, expected, relative):
-    """
-        Computes the difference between experimental and simulated data using the mean-square-log-error method.
-        The MSLE was preferred to the Mean-Square-Error method because errors values computed at different order
-        of magnitude can be compared together.
-
-        :param real: A list of the experimental data for each conditions
-        :type real: List of lists (or arrays)
-        :param expected: A list of the simulated data, mean of 100 agents, for each condition
-        :type expected: List of lists (or arrays)
-        :param relative: Whether the simulated performances are compared to
-        experimental data using absolute values, or if simulated data can be fitted to real data, using an adjustment ratio
-        :type relative: boolean
-
-        :returns: The best additive MSLE between conditions, for all ratios considered
-    """
-    if relative:
-        ratios = np.arange(0.1, 10, 0.1)
-    else:
-        ratios = [1.]
-
-    real_norm = []
-    expected_norm = []
-    try:
-        real_norm = minmax_scale(np.array(real).flatten(), feature_range=(50,100)).reshape((4,11))
-        expected_norm = minmax_scale(np.array(expected).flatten(), feature_range=(50,100)).reshape((4,11))
-        return min([sum([mean_squared_error([real_norm[cond]], [np.array(expected_norm[cond])/ratio]) for cond in range(len(real_norm))]) for ratio in ratios])
-
-    except:
-        real_norm = minmax_scale(np.array(real).flatten(), feature_range=(50,100)).reshape((2,5))
-        expected_norm = minmax_scale(np.array(expected).flatten(), feature_range=(50,100)).reshape((2,5))
-        return min([sum([mean_squared_error([real_norm[cond]], [np.array(expected_norm[cond])/ratio]) for cond in range(len(real_norm))]) for ratio in ratios])*4.4
-
-
-
-    # expected_norm = []
-    # for cond in range(len(expected)):
-    #     expected_norm.append(np.array(real_norm[cond]) * (np.array(expected[cond])/np.array(real[cond])))
-
-    # Alternative
-    #return min([sum([square_error([real[cond]], [expected[cond]/ratio]) for cond in range(len(real))]) for ratio in ratios])
-
-    # For each condition, the MSLE is computed, each condition MSLE is added together.
-    # This is done for all ratios. The minimum MSLE of all ratios is selected and returned
-    # return min([sum([mean_squared_error([real_norm[cond]], [np.array(expected_norm[cond])/ratio]) for cond in range(len(real_norm))]) for ratio in ratios])
-
-
 def perform_statical_analyses_pearce(directory):
     """
         Performs a series of two-way ANOVAs to test whether the escape time variable significantly
@@ -569,36 +523,21 @@ def perform_statical_analyses_rodrigo(directory):
     print("Concatenating all data")
     df_analysis = pd.concat(agents_df_lst)
 
-    # returns a dataframe of the mean occupation of the proximal and distal octants,
-    # during the test episode and at a specific angle condition. A row for each agent
-    def get_octant_mean_occupation(angle, df_analysis, coords):
-        dfx = df_analysis[np.logical_or(df_analysis["angle"]==str(angle), df_analysis["angle"]==str(-angle))]
-        dfx['angle'] = angle
-        distx = get_mean_occupation_octan(dfx, coords)
-        distx['angle'] = angle
-        return distx
-
     print("Computing proximal and distal octants mean occupation on test episodes")
-    dist0 = get_octant_mean_occupation(0, df_analysis, coords)
-    dist45 = get_octant_mean_occupation(45, df_analysis, coords)
-    dist90 = get_octant_mean_occupation(90, df_analysis, coords)
-    dist135 = get_octant_mean_occupation(135, df_analysis, coords)
-    dist180 = get_octant_mean_occupation(180, df_analysis, coords)
+    dist0 = get_mean_occupation_octant(0, df_analysis, coords)
+    dist45 = get_mean_occupation_octant(45, df_analysis, coords)
+    dist90 = get_mean_occupation_octant(90, df_analysis, coords)
+    dist135 = get_mean_occupation_octant(135, df_analysis, coords)
+    dist180 = get_mean_occupation_octant(180, df_analysis, coords)
 
     octant_occup_df = pd.concat([dist0, dist45, dist90, dist135, dist180], ignore_index=False)
-    #octant_occup_df = octant_occup_df[["angle", "isinoctan_distal", "isinoctan_proximal"]]
-    #print("dist0: ", dist0)
-    #print("octant_occup_df: ", octant_occup_df)
-
 
     helmert_rodrigo_0vs_results_p = []
     helmert_rodrigo_45vs_results_p = []
     helmert_rodrigo_90vs_results_p = []
-    #helmert_rodrigo_135vs_results_p = []
     helmert_rodrigo_0vs_results_d = []
     helmert_rodrigo_45vs_results_d = []
     helmert_rodrigo_90vs_results_d = []
-    helmert_rodrigo_135vs_results_d = []
     anova_rodrigo_results = []
     ttest_rodrigo_results = []
 
@@ -612,69 +551,43 @@ def perform_statical_analyses_rodrigo(directory):
         cluster_df = octant_occup_df.loc[closests[cluster_ind][0:100]]
 
         cluster_df = cluster_df.reset_index()
-        #print("cluster_df: ", cluster_df)
-        #print("cluster_df_reset: ", cluster_df.reset_index())
 
         # HELMERT TESTS
-        helmert = lambda lst : ols("isinoctan_proximal ~ C(angle, Helmert)", data=cluster_df[cluster_df["angle"].isin(lst)]).fit()
+        helmert = lambda lst : ols("isinoctant_proximal ~ C(angle, Helmert)", data=cluster_df[cluster_df["angle"].isin(lst)]).fit()
         helmert_rodrigo_0vs_results_p.append(helmert([0,45,90,135,180]).f_pvalue < p)
         helmert_rodrigo_45vs_results_p.append(helmert([45,90,135,180]).f_pvalue < p)
         helmert_rodrigo_90vs_results_p.append(helmert([90,135,180]).f_pvalue < p)
-        #helmert_rodrigo_135vs_results_p.append(helmert([135,180]).f_pvalue < p)
 
         # HELMERT TESTS
-        helmert = lambda lst : ols("isinoctan_distal ~ C(angle, Helmert)", data=cluster_df[cluster_df["angle"].isin(lst)]).fit()
+        helmert = lambda lst : ols("isinoctant_distal ~ C(angle, Helmert)", data=cluster_df[cluster_df["angle"].isin(lst)]).fit()
         helmert_rodrigo_0vs_results_d.append(helmert([0,45,90,135,180]).f_pvalue < p)
         helmert_rodrigo_45vs_results_d.append(helmert([45,90,135,180]).f_pvalue < p)
         helmert_rodrigo_90vs_results_d.append(helmert([90,135,180]).f_pvalue < p)
-        #helmert_rodrigo_135vs_results_d.append(helmert([135,180]).f_pvalue < p)
 
         # ANOVA
-        model = ols('isinoctan_proximal ~ C(angle) + C(angle) + C(angle):C(angle)', data=cluster_df).fit()
+        model = ols('isinoctant_proximal ~ C(angle) + C(angle) + C(angle):C(angle)', data=cluster_df).fit()
         tmp = sm.stats.anova_lm(model, typ=2)
-        model2 = ols('isinoctan_distal ~ C(angle) + C(angle) + C(angle):C(angle)', data=cluster_df).fit()
+        model2 = ols('isinoctant_distal ~ C(angle) + C(angle) + C(angle):C(angle)', data=cluster_df).fit()
         tmp2 = sm.stats.anova_lm(model2, typ=2)
         anova_rodrigo_results.append(tmp["PR(>F)"]["C(angle)"]<p and tmp2["PR(>F)"]["C(angle)"]<p)
 
         # TTESTS
-        ttest = lambda ang : stats.ttest_1samp(cluster_df[cluster_df["angle"] == ang].groupby("agent").mean()["isinoctan_proximal"],0.125).pvalue
-        ttest2 = lambda ang : stats.ttest_1samp(cluster_df[cluster_df["angle"] == ang].groupby("agent").mean()["isinoctan_distal"],0.125).pvalue
+        ttest = lambda ang : stats.ttest_1samp(cluster_df[cluster_df["angle"] == ang].groupby("agent").mean()["isinoctant_proximal"],0.125).pvalue
+        ttest2 = lambda ang : stats.ttest_1samp(cluster_df[cluster_df["angle"] == ang].groupby("agent").mean()["isinoctant_distal"],0.125).pvalue
         ttest_rodrigo_results.append(ttest(0) < p and ttest(45) < p and ttest(90) < p and ttest(135) < p and ttest(180) < p and ttest2(0) < p and ttest2(45) < p)
 
 
     res_df["helmert_rodrigo_0vs_p"] = helmert_rodrigo_0vs_results_p
     res_df["helmert_rodrigo_45vs_p"] = helmert_rodrigo_45vs_results_p
     res_df["helmert_rodrigo_90vs_p"] = helmert_rodrigo_90vs_results_p
-    #res_df["helmert_rodrigo_135vs_p"] = helmert_rodrigo_135vs_results_p
     res_df["helmert_rodrigo_0vs_d"] = helmert_rodrigo_0vs_results_d
     res_df["helmert_rodrigo_45vs_d"] = helmert_rodrigo_45vs_results_d
     res_df["helmert_rodrigo_90vs_d"] = helmert_rodrigo_90vs_results_d
-    #res_df["helmert_rodrigo_135vs_d"] = helmert_rodrigo_135vs_results_d
     res_df["anova_rodrigo"] = anova_rodrigo_results
     res_df["ttest_rodrigo"] = ttest_rodrigo_results
 
     res_df.to_csv("../results/"+directory+"/mean_square_processed.csv",index=False)
 
-
-def get_mean_occupation_octan(df, coords):
-    """
-        Compute the mean occupation of the proximal and distal beacon octants, for each agents, during test episodes
-
-        :param df: the DataFrame containing data of all agents simulated during the gridsearch
-        :type directory: pandas DataFrame
-        :param coords: the dictionary linking states to cartesian coordinates
-        :type coords: dict
-
-        :returns: A DataFrame of the mean occupation (proportion between 0 and 1) of the proximal beacon and distal beacon octants, a row per simulated agent
-    """
-
-    df['isinoctan_distal'] = df.apply(lambda row: isinoctan(coords[row.state], [float(row.distal_posx), float(row.distal_posy)]), axis=1)
-    df['isinoctan_proximal'] = df.apply(lambda row: isinoctan(coords[row.state], [float(row.beacon_posx), float(row.beacon_posy)]), axis=1)
-    df_dist = df.groupby("agent").mean()
-    df_dist['isinoctan_distal'] = df_dist['isinoctan_distal'].replace(np.inf, 0)
-    df_dist['isinoctan_proximal'] = df_dist['isinoctan_proximal'].replace(np.inf, 0)
-
-    return df_dist
 
 # ____________ PLOTTING _____________
 
@@ -803,8 +716,10 @@ def plot_two_perfs(directory, expe="pearce", size_plot=10, relative=True, mode="
         :returns: A pandas DataFrame containing all the valid datapoints (100 nearest-neighbors cluster
         validated all statistical tests) generated during the grid-search
     """
-
-    res_df = pd.read_csv("../saved_results/"+directory+"/mean_square_processed.csv")
+    try:
+        res_df = pd.read_csv("../saved_results/"+directory+"/mean_square_processed.csv")
+    except:
+        res_df = pd.read_csv("../results/"+directory+"/mean_square_processed.csv")
     # plot only two dimensions, srlr and eta are parameters specific to respectively the geerts and dolle models
     if mode == "geerts":
         _,data1,bin12,bin11 = plot_single_perfs(res_df, size_plot, "inv_temp", "srlr", expe, relative)
@@ -892,8 +807,10 @@ def plot_all_perfs(directory, size_plot=10, relative=True, mode="geerts"):
 
         :returns: A pandas DataFrame containing all the datapoints generated during the grid-search (parameters value, MSE, ...)
     """
-
-    res_df = pd.read_csv("../saved_results/"+directory+"/mean_square_processed.csv")
+    try:
+        res_df = pd.read_csv("../saved_results/"+directory+"/mean_square_processed.csv")
+    except:
+        res_df = pd.read_csv("../results/"+directory+"/mean_square_processed.csv")
 
     if mode == "geerts":
         df_pearce,data1,bin12,bin11 = plot_single_perfs(res_df, size_plot, "inv_temp", "srlr", "pearce", relative)

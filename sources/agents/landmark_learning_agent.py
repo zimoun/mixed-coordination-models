@@ -33,7 +33,7 @@ class LandmarkLearningAgent(Agent, AssociativeAgent, FirstOrderAgent):
 
     def __init__(self, env, gamma, learning_rate, inv_temp, eta, allo):
 
-        Agent().__init__(env=env, gamma=0.9, learning_rate=learning_rate, inv_temp=inv_temp)
+        super().__init__(env=env, gamma=0.9, learning_rate=learning_rate, inv_temp=inv_temp)
 
         self.eta = eta # to compute the model's reliability (see update_reliability())
         self.allo = allo
@@ -114,7 +114,7 @@ class LandmarkLearningAgent(Agent, AssociativeAgent, FirstOrderAgent):
         if orientation is None:
             orientation = self.env.agent_orientation
 
-        proximal_rep = self.get_single_feature_rep(state, orientation, self.env.landmark_location) # 80 neurons activity
+        proximal_rep = self.get_single_feature_rep(state, orientation, self.env.proximal_landmark_location) # 80 neurons activity
         distal_rep = self.get_single_feature_rep(state, orientation, self.env.distal_landmark_location) # # 80 neurons activity
         visual_rep = np.concatenate((proximal_rep, distal_rep), axis=None)
         return visual_rep

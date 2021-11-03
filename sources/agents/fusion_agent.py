@@ -58,7 +58,7 @@ class CombinedAgent(Agent):
         if init_sr != 'zero' and init_sr != 'rw' and init_sr != 'identity':
             raise Exception("init_sr should be set to either 'zero', 'rw' or 'identity'")
 
-        Agent().__init__(env=env, gamma=gamma, learning_rate=None, inv_temp=inv_temp)
+        super().__init__(env=env, gamma=gamma, learning_rate=None, inv_temp=inv_temp)
 
         self.A_alpha = A_alpha
         self.A_beta = A_beta
@@ -133,7 +133,7 @@ class CombinedAgent(Agent):
         Q_combined, _, _, _ = self.compute_Q(s)
 
         # selection of the preferred action in the allocentric and egocentric frame
-        allo_a = self.softmax_selection(state_index=s, Q=Q_combined, nbr_actions=6, inv_temp=self.inv_temp)
+        allo_a = self.softmax_selection(Q=Q_combined, inv_temp=self.inv_temp)
         ego_a = self.DLS.get_ego_action(allo_a, orientation)
         return allo_a, ego_a
 
@@ -214,7 +214,8 @@ class CombinedAgent(Agent):
         beta = self.get_beta(self.HPC.reliability) # computes transition rates from SR to MF
 
         tau = self.max_psr / (alpha + beta)
-        fixedpoint = (alpha + self.inact_dls * beta) * tau
+        inact_dls = 0. # comes from the previous implementation, always 0. now
+        fixedpoint = (alpha + inact_dls * beta) * tau
 
         dpdt = (fixedpoint - self.p_sr) / tau
 

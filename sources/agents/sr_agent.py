@@ -69,6 +69,9 @@ class SRTD(Agent, ModelBasedAgent, FirstOrderAgent):
         elif init_sr == 'opt': # doesn't work, not used
             optimal_policy, _ = value_iteration(self.env)
             M_hat = self.env.get_successor_representation(optimal_policy, gamma=self.gamma)
+        else:
+            raise Exception("init_sr should be set to either 'zero', 'rw', 'identity' or 'opt'")
+
 
         return M_hat
 

@@ -356,27 +356,27 @@ def get_coords():
     coords = env.grid.cart_coords
     return coords
 
-
-def create_path(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A_alpha, A_beta, landmark_dist, HPCmode, time_limit, edge_states, lesion_HPC, lesion_DLS, dolle, inv_temp=None, inv_temp_gd=None, inv_temp_mf=None, arbi_inv_temp = None):
+# n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A_alpha, A_beta, landmark_dist, HPCmode, time_limit, edge_states, lesion_HPC, lesion_DLS, dolle, inv_temp=None, inv_temp_gd=None, inv_temp_mf=None, arbi_inv_temp = None
+def create_path(env_params, ag_params):
     """
     Associate multiple parameters used to run a simulation of a Morris water-maze derived task (Pearce 1998 or Rodrigo 2006),
     to form a complex path where the data resulting from the simulation is stored.
     Identical parameters to perform_rodrigo()
     :return type: str
     """
-    if dolle:
-        if inv_temp_gd is None:
+    if ag_params.dolle:
+        if ag_params.inv_temp_gd is None:
             raise Exception("inv_temp_gd is undefined")
-        if inv_temp_mf is None:
+        if ag_params.inv_temp_mf is None:
             raise Exception("inv_temp_mf is undefined")
-        if arbi_inv_temp is None:
+        if ag_params.arbi_inv_temp is None:
             raise Exception("arbi_inv_temp is undefined")
-        path = os.path.join(str(n_agents)+str(mf_allo)+str(sr_lr)+str(q_lr)+str(inv_temp_gd)+str(inv_temp_mf)+str(arbi_inv_temp)+str(gamma)+str(eta)+str(alpha1)+str(beta1)+str(A_alpha)+str(A_beta)+str(landmark_dist)+str(HPCmode)+str(time_limit)+str(lesion_HPC)+str(lesion_DLS)+str(dolle))
+        path = os.path.join(str(env_params.n_agents)+str(ag_params.mf_allo)+str(ag_params.hpc_lr)+str(ag_params.q_lr)+str(ag_params.inv_temp_gd)+str(ag_params.inv_temp_mf)+str(ag_params.arbi_inv_temp)+str(ag_params.gamma)+str(ag_params.eta)+str(ag_params.alpha1)+str(ag_params.beta1)+str(ag_params.A_alpha)+str(ag_params.A_beta)+str(env_params.landmark_dist)+str(ag_params.HPCmode)+str(env_params.time_limit)+str(ag_params.lesion_HPC)+str(ag_params.lesion_DLS)+str(ag_params.dolle))
 
     else:
-        if inv_temp is None:
+        if ag_params.inv_temp is None:
             raise Exception("inv_temp is undefined")
-        path = os.path.join(str(n_agents)+str(mf_allo)+str(sr_lr)+str(q_lr)+str(inv_temp)+str(gamma)+str(eta)+str(alpha1)+str(beta1)+str(A_alpha)+str(A_beta)+str(landmark_dist)+str(HPCmode)+str(time_limit)+str(lesion_HPC)+str(lesion_DLS)+str(dolle))
+        path = os.path.join(str(env_params.n_agents)+str(ag_params.mf_allo)+str(ag_params.hpc_lr)+str(ag_params.q_lr)+str(ag_params.inv_temp)+str(ag_params.gamma)+str(ag_params.eta)+str(ag_params.alpha1)+str(ag_params.beta1)+str(ag_params.A_alpha)+str(ag_params.A_beta)+str(env_params.landmark_dist)+str(ag_params.HPCmode)+str(env_params.time_limit)+str(ag_params.lesion_HPC)+str(ag_params.lesion_DLS)+str(ag_params.dolle))
 
     return path
 
@@ -465,6 +465,14 @@ def get_MSLE(real, expected, relative):
         expected_norm = minmax_scale(np.array(expected).flatten(), feature_range=(50,100)).reshape((2,5))
         return min([sum([mean_squared_error([real_norm[cond]], [np.array(expected_norm[cond])/ratio]) for cond in range(len(real_norm))]) for ratio in ratios])*4.4
 
+
+# print every environment's and agent's parameters into a file
+def save_params_in_txt(results_folder, env_params, ag_params):
+
+    f = open(results_folder+"/parameters.txt",'w')
+    [print(key,':',value, file=f) for key, value in vars(env_params).items()]
+    [print(key,':',value, file=f) for key, value in vars(ag_params).items()]
+    f.close()
 
 # ____________________________________
 # Original code from Geerts 2020 below

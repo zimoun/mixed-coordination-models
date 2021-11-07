@@ -2,7 +2,7 @@ import pickle
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-from main_pearce import create_path_main_pearce
+from pearce_protocol import create_path_main_pearce
 from utils import get_mean_preferred_dirs, plot_mean_arrows, charge_agents
 
 
@@ -10,7 +10,7 @@ def exp3_pearce(maze_size, n_trials, n_sessions, n_agents, mf_allo, sr_lr, q_lr,
     """
     Subject a group of agents to the third experiment of Pearce 1998.
     In accord with Pearce 1998 protocol, each agents used for the third experiment has previously been trained on
-    the full Pearce 1998 first experiment (perform_main_pearce() in the main_pearce module in our work).
+    the full Pearce 1998 first experiment (perform_group_pearce() in the main_pearce module in our work).
     Agents are subdivided in two experimental groups: control and inverted landmark distance group.
     Both groups are then subjected to one episode of the first Pearce 1998 task where the agent must find a submerged
     platform, in a limited amount of time in a water-maze, with only a proximal landmark indicating the presence of the platform.
@@ -23,7 +23,7 @@ def exp3_pearce(maze_size, n_trials, n_sessions, n_agents, mf_allo, sr_lr, q_lr,
 
     IMPORTANT : pass lesion_HPC as True to simulate and visualize data for hpc-lesioned agents and lesion_HPC as False for normal agents
 
-    Parameters identical to the perform_main_pearce() method in the main_pearce module
+    Parameters identical to the perform_group_pearce() method in the main_pearce module
     """
     # Original results
     fig,(ax0, ax1)=plt.subplots(1,2, figsize=(15,6))
@@ -97,7 +97,7 @@ def run_test(maze_size, n_trials, n_sessions, n_agents, mf_allo, sr_lr, q_lr, ga
     Build a path to an existing results folder. Charge an already trained group of agents from a previous Pearce 1998
     experiment simulation. Launch the third experiment of Pearce 1998 with the charged agents.
 
-    Parameters identical to the perform_main_pearce() method in the main_pearce module
+    Parameters identical to the perform_group_pearce() method in the main_pearce module
     :returns: A dataframe containing the logs of simulations of the third experiment of pearce
     :return type: pandas DataFrame
     """

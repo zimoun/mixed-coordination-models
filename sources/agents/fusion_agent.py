@@ -51,34 +51,35 @@ class CombinedAgent(Agent):
     :type lesion_hpc: boolean
     """
 
-    def __init__(self, env, gamma, q_lr, hpc_lr, inv_temp, eta, A_alpha, A_beta, alpha1, beta1,
-                init_sr='zero', HPCmode="SR", mf_allo=False, lesion_dls=False,
-                lesion_hpc=False):
+    def __init__(self, env, ag_params, init_sr=None):
 
-        if init_sr != 'zero' and init_sr != 'rw' and init_sr != 'identity':
-            raise Exception("init_sr should be set to either 'zero', 'rw' or 'identity'")
+        # if init_sr != 'zero' and init_sr != 'rw' and init_sr != 'identity' and init_sr != 'opt':
+        #     raise Exception("init_sr should be set to either 'zero', 'rw', 'identity or 'opt'")
 
-        super().__init__(env=env, gamma=gamma, learning_rate=None, inv_temp=inv_temp)
+        super().__init__(env=env, gamma=ag_params.gamma, learning_rate=None, inv_temp=ag_params.inv_temp)
 
-        self.A_alpha = A_alpha
-        self.A_beta = A_beta
-        self.alpha1 = alpha1
-        self.beta1 = beta1
+        self.A_alpha = ag_params.A_alpha
+        self.A_beta = ag_params.A_beta
+        self.alpha1 = ag_params.alpha1
+        self.beta1 = ag_params.beta1
 
-        self.HPCmode = HPCmode
-        self.mf_allo = mf_allo
+        self.HPCmode = ag_params.HPCmode
+        self.mf_allo = ag_params.mf_allo
 
-        self.lesion_striatum = lesion_dls
-        self.lesion_hippocampus = lesion_hpc
+        self.lesion_striatum = ag_params.lesion_DLS
+        self.lesion_hippocampus = ag_params.lesion_HPC
 
         if self.HPCmode == "SR":
-            self.HPC = SRTD(self.env, gamma=gamma, learning_rate=hpc_lr, inv_temp=inv_temp, eta=eta, init_sr=init_sr)
+            self.HPC = SRTD(self.env, gamma=ag_params.gamma, learning_rate=ag_params.hpc_lr,
+                            inv_temp=ag_params.inv_temp, eta=ag_params.eta, init_sr=init_sr)
         elif self.HPCmode == "MB":
-            self.HPC = RTDP(self.env, gamma=gamma, learning_rate=hpc_lr, inv_temp=inv_temp, eta=eta)
+            self.HPC = RTDP(self.env, gamma=ag_params.gamma, learning_rate=ag_params.hpc_lr,
+                            inv_temp=ag_params.inv_temp, eta=ag_params.eta)
         else:
             raise Exception("HPCmode should either be MB or SR")
 
-        self.DLS = LandmarkLearningAgent(self.env, gamma=gamma, learning_rate=q_lr, inv_temp=inv_temp, eta=eta, allo=mf_allo)
+        self.DLS = LandmarkLearningAgent(self.env, gamma=ag_params.gamma, learning_rate=ag_params.q_lr,
+                                        inv_temp=ag_params.inv_temp, eta=ag_params.eta, allo=ag_params.mf_allo)
 
         self.max_psr = 1
         self.p_sr = .9 # comprised between 0 and 1

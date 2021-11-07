@@ -1,5 +1,5 @@
-from rodrigo import perform_rodrigo, create_path_rodrigo, get_values_rodrigo, get_mean_occupation_octant, create_df
-from main_pearce import perform_main_pearce, create_path_main_pearce
+from rodrigo_protocol import perform_group_rodrigo, create_path_rodrigo, get_values_rodrigo, get_mean_occupation_octant, create_df
+from pearce_protocol import perform_group_pearce, create_path_main_pearce
 from utils import isinoctant, get_MSLE, get_coords
 
 from sklearn.metrics.pairwise import euclidean_distances
@@ -163,11 +163,11 @@ def random_grid_search(directory, expe, n_datapoints, mf_allo, dolle, HPCmode, s
                 lesion_HPC = False
                 lesion_DLS = False
                 # run the simulation (control)
-                perform_main_pearce(10, 4, 11, 1, mf_allo, srlr_real, qlr_real, gamma_real, eta_real, 0.01, 0.1, 3.2, 1.1, 4, HPCmode, 500, [243,230,270,257], lesion_HPC, lesion_DLS, dolle, inv_temp=inv_temp_real, inv_temp_gd=inv_temp_real, inv_temp_mf=inv_temp_real, arbi_inv_temp=inv_temp_real, show_quiv=False, show_perfs=False, save_agents=False, create_plots=False, directory = directory+"/pearce_control", verbose = False)
+                perform_group_pearce(10, 4, 11, 1, mf_allo, srlr_real, qlr_real, gamma_real, eta_real, 0.01, 0.1, 3.2, 1.1, 4, HPCmode, 500, [243,230,270,257], lesion_HPC, lesion_DLS, dolle, inv_temp=inv_temp_real, inv_temp_gd=inv_temp_real, inv_temp_mf=inv_temp_real, arbi_inv_temp=inv_temp_real, show_quiv=False, show_perfs=False, save_agents=False, create_plots=False, directory = directory+"/pearce_control", verbose = False)
 
                 lesion_HPC = True
                 # run the simulation (lesioned)
-                perform_main_pearce(10, 4, 11, 1, mf_allo, srlr_real, qlr_real, gamma_real, eta_real, 0.01, 0.1, 3.2, 1.1, 4, HPCmode, 500, [243,230,270,257], lesion_HPC, lesion_DLS, dolle, inv_temp=inv_temp_real, inv_temp_gd=inv_temp_real, inv_temp_mf=inv_temp_real, arbi_inv_temp=inv_temp_real, show_quiv=False, show_perfs=False, save_agents=False, create_plots=False, directory = directory+"/pearce_lesion", verbose = False)
+                perform_group_pearce(10, 4, 11, 1, mf_allo, srlr_real, qlr_real, gamma_real, eta_real, 0.01, 0.1, 3.2, 1.1, 4, HPCmode, 500, [243,230,270,257], lesion_HPC, lesion_DLS, dolle, inv_temp=inv_temp_real, inv_temp_gd=inv_temp_real, inv_temp_mf=inv_temp_real, arbi_inv_temp=inv_temp_real, show_quiv=False, show_perfs=False, save_agents=False, create_plots=False, directory = directory+"/pearce_lesion", verbose = False)
 
                 results_folder_normal = create_path_main_pearce(10, 4, 11, 1, mf_allo, srlr_real, qlr_real, gamma_real, eta_real, 0.01, 0.1, 3.2, 1.1, 4, HPCmode, 500, [243,230,270,257], False, False, dolle, inv_temp=inv_temp_real, inv_temp_gd=inv_temp_real, inv_temp_mf=inv_temp_real, arbi_inv_temp = inv_temp_real, directory=directory+"/pearce_control")
                 results_folder_lesion = create_path_main_pearce(10, 4, 11, 1, mf_allo, srlr_real, qlr_real, gamma_real, eta_real, 0.01, 0.1, 3.2, 1.1, 4, HPCmode, 500, [243,230,270,257], True, False, dolle, inv_temp=inv_temp_real, inv_temp_gd=inv_temp_real, inv_temp_mf=inv_temp_real, arbi_inv_temp = inv_temp_real, directory=directory+"/pearce_lesion")
@@ -180,7 +180,7 @@ def random_grid_search(directory, expe, n_datapoints, mf_allo, dolle, HPCmode, s
                 # an additional simulation is performed, with a deactivated arbitrator on
                 # HPC-lesioned condition (to systematically reject the HPC Q-values)
                 if dolle:
-                    perform_main_pearce(10, 4, 11, 1, mf_allo, srlr_real, qlr_real, gamma_real, eta_real, 0.01, 0.1, 3.2, 1.1, 4, HPCmode, 500, [243,230,270,257], lesion_HPC, lesion_DLS, dolle, inv_temp=inv_temp_real, inv_temp_gd=inv_temp_real, inv_temp_mf=inv_temp_real, arbi_inv_temp=inv_temp_real, show_quiv=False, show_perfs=False, save_agents=False, create_plots=False, directory = directory+"/pearce_noPFC", verbose = False, lesion_PFC=True)
+                    perform_group_pearce(10, 4, 11, 1, mf_allo, srlr_real, qlr_real, gamma_real, eta_real, 0.01, 0.1, 3.2, 1.1, 4, HPCmode, 500, [243,230,270,257], lesion_HPC, lesion_DLS, dolle, inv_temp=inv_temp_real, inv_temp_gd=inv_temp_real, inv_temp_mf=inv_temp_real, arbi_inv_temp=inv_temp_real, show_quiv=False, show_perfs=False, save_agents=False, create_plots=False, directory = directory+"/pearce_noPFC", verbose = False, lesion_PFC=True)
                     results_folder_lesion_noHPC = create_path_main_pearce(10, 4, 11, 1, mf_allo, srlr_real, qlr_real, gamma_real, eta_real, 0.01, 0.1, 3.2, 1.1, 4, HPCmode, 500, [243,230,270,257], True, False, dolle, inv_temp=inv_temp_real, inv_temp_gd=inv_temp_real, inv_temp_mf=inv_temp_real, arbi_inv_temp = inv_temp_real, directory=directory+"/pearce_noPFC")
                     df_lesion_noHPC = create_df(results_folder_lesion_noHPC, 1)
 
@@ -223,7 +223,7 @@ def random_grid_search(directory, expe, n_datapoints, mf_allo, dolle, HPCmode, s
             if expe == "rodrigo":
 
                 # run the simulation
-                perform_rodrigo(1, mf_allo, srlr_real, qlr_real, gamma_real, eta_real, 0.01, 0.1, 3.2, 1.1, 0, HPCmode, 500, [243,230,270,257], False, False, dolle, inv_temp=inv_temp_real, inv_temp_gd=inv_temp_real, inv_temp_mf=inv_temp_real, arbi_inv_temp = inv_temp_real, directory=directory+"/rodrigo", save_agents=False, verbose=False, create_plots=False)
+                perform_group_rodrigo(1, mf_allo, srlr_real, qlr_real, gamma_real, eta_real, 0.01, 0.1, 3.2, 1.1, 0, HPCmode, 500, [243,230,270,257], False, False, dolle, inv_temp=inv_temp_real, inv_temp_gd=inv_temp_real, inv_temp_mf=inv_temp_real, arbi_inv_temp = inv_temp_real, directory=directory+"/rodrigo", save_agents=False, verbose=False, create_plots=False)
                 results_folder = create_path_rodrigo(1, mf_allo, srlr_real, qlr_real, gamma_real, eta_real, 0.01, 0.1, 3.2, 1.1, 0, HPCmode, 500, [243,230,270,257], False, False, dolle, inv_temp=inv_temp_real, inv_temp_gd=inv_temp_real, inv_temp_mf=inv_temp_real, arbi_inv_temp = inv_temp_real, directory=directory+"/rodrigo")
                 # retrieve the mean occupation time of different octants in the raw results logs
                 (dist0, dist45, dist90, dist135, dist180, prox0, prox45, prox90, prox135, prox180, ydist0, ydist45, ydist90, ydist135, ydist180, yprox0, yprox45, yprox90, yprox135, yprox180) = get_values_rodrigo(results_folder, 1)

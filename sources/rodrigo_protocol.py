@@ -1,7 +1,7 @@
 from agents.dolle_agent import DolleAgent
 from agents.fusion_agent import CombinedAgent
 from environments.HexWaterMaze import HexWaterMaze
-from utils import create_path, create_df, get_coords, isinoctant
+from utils import create_path, create_df, get_coords, isinoctant, save_params_in_txt
 
 from IPython.display import clear_output
 from statsmodels.formula.api import ols
@@ -19,7 +19,7 @@ import time
 import os
 
 
-def perform_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A_alpha, A_beta, landmark_dist, HPCmode, time_limit, edge_states, lesion_HPC, lesion_DLS, dolle=False, create_plots = True, save_agents=True, inv_temp=None, inv_temp_gd=None, inv_temp_mf=None, arbi_inv_temp = None, directory=None, verbose=True):
+def perform_group_rodrigo(env_params, ag_params, show_plots=True, save_plots=True, save_agents=True, directory=None, verbose=True):
     """
     Run multiple simulations of the first experiment of Rodrigo 2006, a Morris water-maze derived task where a rat has
     to navigate through a circular maze filled with water, to find a submerged platform indicated by both a
@@ -40,52 +40,16 @@ def perform_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A
     the proximal landmark is rotated.
     See Rodrigo 2006 for original results and exact protocol.
 
-    :param n_agents: number of simulations (with a different agent for each) to run
-    :type n_agents: int
-    :param mf_allo: whether the DLS module is in the allocentric or egocentric frame of reference
-    :type mf_allo: boolean
-    :param q_lr: learning rate of the DLS model
-    :type q_lr: float
-    :param sr_lr: learning rate of the HPC model (SR or MB)
-    :type sr_lr: float
-    :param gamma: discount factor of value propagation (shared between coordination, SR, MB and MF models)
-    :type gamma: float
-    :param eta: used to update the HPC and DLS models' reliability (Geerts coordination model only)
-    :type eta: float
-    :param alpha1: used to compute the transition rate from MF to SR (Geerts coordination model only)
-    :type alpha1: float
-    :param beta1: used to compute the transition rate from SR to MF (Geerts coordination model only)
-    :type beta1: float
-    :param A_alpha: steepness of transition curve MF to SR (Geerts coordination model only)
-    :type A_alpha: float
-    :param A_beta: steepness of transition curve SR to MF (Geerts coordination model only)
-    :type A_beta: float
-    :param landmark_dist: number of states separating the landmark from the platform
-    :type landmark_dist: int
-    :param HPCmode: to choose the model of the HPC, either "SR" or "MB"
-    :type HPCmode: str
-    :param time_limit: max number of timestep to find the reward, the episode is forced to end if reached
-    :type time_limit: int
-    :param edge_states: list of eligible starting states
-    :type edge_states: list of int
-    :param lesion_HPC: Whether the DLS module is inactivated or not (full control of HPC if True)
-    :type lesion_HPC: boolean
-    :param lesion_DLS: Whether the HPC module is inactivated or not (full control of DLS if True)
-    :type lesion_DLS: boolean
-    :param dolle: whether the coordination model is based on associative learning (Dolle) or fusion (Geerts)
-    :type dolle: boolean
-    :param create_plots: whether to display any plot at all at the end of the simulations
-    :type create_plot: boolean
+    :param env_params: Contains all the parameters to set the water-maze RL environment (see EnvironmentParams for details)
+    :type env_params: EnvironmentParams
+    :param ag_params: Contains all the parameters to set the different RL modules of the agent (see AgentsParams for details)
+    :type ag_params: AgentsParams
+    :param show_plots: whether to display any created plot at the end of the simulations
+    :type show_plot: boolean
+    :param save_plots: whether to save any created plots in the results folder at the end of the simulations
+    :type save_plots: boolean
     :param save_agents:  whether to save Agents object in the result folder (take a lot of memory)
     :type save_agents: boolean
-    :param inv_temp: DLS inverse temperature for softmax exploration (Geerts model only)
-    :type inv_temp: int
-    :param inv_temp_gd: HPC inverse temperature for softmax exploration (Dolle model only)
-    :type inv_temp_gd: int
-    :param inv_temp_mf: DLS inverse temperature for softmax exploration (Dolle model only)
-    :type inv_temp_mf: int
-    :param arbi_inv_temp: Coordination model inverse temperature for softmax exploration (Dolle model only)
-    :type arbi_inv_temp: int
     :param directory: optional directory where to store all the results (used for grid-search)
     :type directory: str
     :param verbose: whether to print the progress of the simulations
@@ -104,9 +68,9 @@ def perform_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A
     landmark_dist = 0
 
     # create environment
-    possible_platform_states, envi = get_maze_rodrigo(maze_size, landmark_dist, edge_states)
+    possible_platform_states, envi = get_maze_rodrigo(env_params.maze_size, env_params.landmark_dist, env_params.starting_states)
     # get results directory path
-    results_folder = create_path_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A_alpha, A_beta, landmark_dist, HPCmode, time_limit, edge_states, lesion_HPC, lesion_DLS, dolle, inv_temp=inv_temp, inv_temp_gd=inv_temp_gd, inv_temp_mf=inv_temp_mf, arbi_inv_temp = arbi_inv_temp, directory=directory)
+    results_folder = create_path_rodrigo(env_params, ag_params, directory=directory)
 
     saved_results_folder = "../saved_results/"+results_folder # never erased
     results_folder = "../results/"+results_folder # erased if an identical simulation is run
@@ -119,41 +83,18 @@ def perform_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A
         os.makedirs(results_folder)
         os.makedirs(figure_folder)
 
+        save_params_in_txt(results_folder, env_params, ag_params)
+
         agents = []
-        for n_agent in range(n_agents):
+        for n_agent in range(env_params.n_agents):
 
             # np.random.seed(n_agent) # uncomment to make every simulation identical
 
-            # intialise agent (either Geerts' model or Dolle's)
-            if not dolle:
-                agent = CombinedAgent(envi, init_sr='zero',
-                                      inv_temp=inv_temp,
-                                      gamma=gamma,
-                                      q_lr=q_lr,
-                                      hpc_lr=sr_lr,
-                                      eta=eta,
-                                      alpha1=alpha1,
-                                      beta1=beta1,
-                                      A_alpha = A_alpha,
-                                      A_beta = A_beta,
-                                      mf_allo = mf_allo,
-                                      HPCmode = HPCmode,
-                                      lesion_hpc = lesion_HPC,
-                                      lesion_dls = lesion_DLS,
-                                    )
+            # initialise agent (either Geerts' model or Dolle's)
+            if not ag_params.dolle:
+                agent = CombinedAgent(envi, ag_params, init_sr=env_params.init_sr)
             else:
-                agent = DolleAgent(envi, init_sr='zero',
-                                      inv_temp_gd=inv_temp_gd,
-                                      inv_temp_mf= inv_temp_gd,
-                                      gamma=gamma,
-                                      q_lr=q_lr,
-                                      hpc_lr=sr_lr,
-                                      learning_rate=eta,
-                                      mf_allo = mf_allo,
-                                      HPCmode = HPCmode,
-                                      lesion_hpc = lesion_HPC,
-                                      lesion_dls = lesion_DLS,
-                                      arbi_inv_temp = arbi_inv_temp)
+                agent = DolleAgent(envi, ag_params, init_sr=env_params.init_sr)
 
             total_trial_count = 0
 
@@ -168,7 +109,7 @@ def perform_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A
                 envi.set_platform_state(pretraining_platforms[trial])
                 envi.delete_landmarks()
                 # simulate one episode, res is a dataframe keeping track of agent's and environment's variables at each timesteps
-                res = envi.one_episode(agent, time_limit)
+                res = envi.one_episode(agent, env_params.time_limit)
 
                 # add infos for each trial
                 res['trial'] = trial
@@ -197,7 +138,7 @@ def perform_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A
                     if verbose:
                         print("agent: "+str(n_agent)+", stage: 1, session: "+str(ses)+", trial: "+str(trial)+"                              ", end="\r")
 
-                    res = envi.one_episode(agent, time_limit)
+                    res = envi.one_episode(agent, env_params.time_limit)
 
                     res['trial'] = trial
                     res['escape time'] = res.time.max()
@@ -239,7 +180,7 @@ def perform_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A
                     if special_trial == trial and cond == "extinction":
                         envi.delete_proximal_landmark()
                         envi.delete_plaform()
-                        res = envi.one_episode(agent, time_limit/2)
+                        res = envi.one_episode(agent, env_params.time_limit/2)
                         # put platform and proximal landmark at normal again
                         envi.set_platform_state(platform_state)
                         envi.set_proximal_landmark()
@@ -253,7 +194,7 @@ def perform_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A
                     elif special_trial == trial and cond == "test":
                         envi.delete_plaform()
                         envi.set_angle_proximal_beacon(angles[ses]) # rotate the proximal landmark
-                        res = envi.one_episode(agent, time_limit/2)
+                        res = envi.one_episode(agent, env_params.time_limit/2)
                         res["proximal_posx"] = envi.proximal_landmark_location[0]
                         res["proximal_posy"] = envi.proximal_landmark_location[1]
                         res["distal_posx"] = envi.distal_landmark_location[0]
@@ -265,7 +206,7 @@ def perform_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A
                         envi.set_proximal_landmark()
 
                     else: # normal trial
-                        res = envi.one_episode(agent, time_limit)
+                        res = envi.one_episode(agent, env_params.time_limit)
                         res["proximal_posx"] = envi.proximal_landmark_location[0]
                         res["proximal_posy"] = envi.proximal_landmark_location[1]
                         res["distal_posx"] = envi.distal_landmark_location[0]
@@ -299,13 +240,12 @@ def perform_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A
             file_to_store.close()
 
         # plot a histogram of the mean occupancy of distal landmark octant and proximal landmark octant for each angle condition
-        if create_plots:
-            plot_rodrigo(results_folder, n_agents)
+        plot_rodrigo(results_folder, env_params.n_agents, show_plots, save_plots)
 
     # if an identical simulation has already been saved
     else:
         # plot a histogram of the mean occupancy of distal landmark octant and proximal landmark octant for each angle condition
-        plot_rodrigo(saved_results_folder, n_agents)
+        plot_rodrigo(saved_results_folder, env_params.n_agents, show_plots, save_plots)
 
     # delete all agents, to prevent memory error
     if 'agents' in locals():
@@ -313,7 +253,7 @@ def perform_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A
             del i
         del agents
 
-def run_statistical_tests_rodrigo(path, n_agents):
+def run_statistical_tests_rodrigo(path, n_agents, show_plots):
     """
     Check and print if a group of agents validate multiple statistical test,
     originally performed in rodrigo 2006 (Helmert contrasts, ANOVAs, TTests)
@@ -321,94 +261,134 @@ def run_statistical_tests_rodrigo(path, n_agents):
     :param path: path where the simulation data to analyse is stored
     :type path: str
     """
-    coords = get_coords() # associate each state of the water-maze with a cartesian coordinate
-    df_analysis = pd.DataFrame()
-    agents_df_lst = []
 
-    for agent_ind in range(n_agents):
-        print("agent: "+ str(agent_ind), end="\r")
-        one_agent_df = pd.read_csv(path+"/agent"+str(agent_ind)+".csv")
-        one_agent_df["agent"] = agent_ind
-        one_agent_df = one_agent_df[one_agent_df["cond"] == "test"]
-        agents_df_lst.append(one_agent_df)
+    try:
+        coords = get_coords() # associate each state of the water-maze with a cartesian coordinate
+        df_analysis = pd.DataFrame()
+        agents_df_lst = []
 
-    print("Concatenating all data")
-    df_analysis = pd.concat(agents_df_lst)
+        for agent_ind in range(n_agents):
+            print("agent: "+ str(agent_ind), end="\r")
+            one_agent_df = pd.read_csv(path+"/agent"+str(agent_ind)+".csv")
+            one_agent_df["agent"] = agent_ind
+            one_agent_df = one_agent_df[one_agent_df["cond"] == "test"]
+            agents_df_lst.append(one_agent_df)
 
-    print("Computing proximal and distal octants mean occupation on test episodes")
-    dist0 = get_mean_occupation_octant(0, df_analysis, coords)
-    dist45 = get_mean_occupation_octant(45, df_analysis, coords)
-    dist90 = get_mean_occupation_octant(90, df_analysis, coords)
-    dist135 = get_mean_occupation_octant(135, df_analysis, coords)
-    dist180 = get_mean_occupation_octant(180, df_analysis, coords)
+        print("Concatenating all data")
+        df_analysis = pd.concat(agents_df_lst)
 
-    octant_occup_df = pd.concat([dist0, dist45, dist90, dist135, dist180], ignore_index=False)
+        print("Computing proximal and distal octants mean occupation on test episodes")
+        dist0 = get_mean_occupation_octant(0, df_analysis, coords)
+        dist45 = get_mean_occupation_octant(45, df_analysis, coords)
+        dist90 = get_mean_occupation_octant(90, df_analysis, coords)
+        dist135 = get_mean_occupation_octant(135, df_analysis, coords)
+        dist180 = get_mean_occupation_octant(180, df_analysis, coords)
 
-    helmert_rodrigo_0vs_results_p = []
-    helmert_rodrigo_45vs_results_p = []
-    helmert_rodrigo_90vs_results_p = []
-    helmert_rodrigo_0vs_results_d = []
-    helmert_rodrigo_45vs_results_d = []
-    helmert_rodrigo_90vs_results_d = []
-    anova_rodrigo_results = []
-    ttest_rodrigo_results = []
+        octant_occup_df = pd.concat([dist0, dist45, dist90, dist135, dist180], ignore_index=False)
 
-    p = 0.05
+        helmert_rodrigo_0vs_results_p = []
+        helmert_rodrigo_45vs_results_p = []
+        helmert_rodrigo_90vs_results_p = []
+        helmert_rodrigo_0vs_results_d = []
+        helmert_rodrigo_45vs_results_d = []
+        helmert_rodrigo_90vs_results_d = []
+        anova_rodrigo_results = []
+        ttest_rodrigo_results = []
 
-    print("Performing statistical analyses")
+        p = 0.05
 
-    cluster_df = octant_occup_df
-    cluster_df = cluster_df.reset_index()
+        print("Performing statistical analyses")
 
-    # HELMERT TESTS
-    helmert_p = lambda lst : ols("isinoctant_proximal ~ C(angle, Helmert)", data=cluster_df[cluster_df["angle"].isin(lst)]).fit()
-    helmert_rodrigo_0vs_results_p.append(helmert_p([0,45,90,135,180]).f_pvalue < p)
-    helmert_rodrigo_45vs_results_p.append(helmert_p([45,90,135,180]).f_pvalue < p)
-    helmert_rodrigo_90vs_results_p.append(helmert_p([90,135,180]).f_pvalue < p)
+        cluster_df = octant_occup_df
+        cluster_df = cluster_df.reset_index()
 
-    # HELMERT TESTS
-    helmert_d = lambda lst : ols("isinoctant_distal ~ C(angle, Helmert)", data=cluster_df[cluster_df["angle"].isin(lst)]).fit()
-    helmert_rodrigo_0vs_results_d.append(helmert_d([0,45,90,135,180]).f_pvalue < p)
-    helmert_rodrigo_45vs_results_d.append(helmert_d([45,90,135,180]).f_pvalue < p)
-    helmert_rodrigo_90vs_results_d.append(helmert_d([90,135,180]).f_pvalue < p)
+        # HELMERT TESTS
+        helmert_p = lambda lst : ols("isinoctant_proximal ~ C(angle, Helmert)", data=cluster_df[cluster_df["angle"].isin(lst)]).fit()
+        helmert_rodrigo_0vs_results_p.append(helmert_p([0,45,90,135,180]).f_pvalue < p)
+        helmert_rodrigo_45vs_results_p.append(helmert_p([45,90,135,180]).f_pvalue < p)
+        helmert_rodrigo_90vs_results_p.append(helmert_p([90,135,180]).f_pvalue < p)
 
-    # ANOVA
-    model = ols('isinoctant_proximal ~ C(angle) + C(angle) + C(angle):C(angle)', data=cluster_df).fit()
-    tmp = sm.stats.anova_lm(model, typ=2)
-    model2 = ols('isinoctant_distal ~ C(angle) + C(angle) + C(angle):C(angle)', data=cluster_df).fit()
-    tmp2 = sm.stats.anova_lm(model2, typ=2)
-    anova_rodrigo_results.append(tmp["PR(>F)"]["C(angle)"]<p and tmp2["PR(>F)"]["C(angle)"]<p)
+        # HELMERT TESTS
+        helmert_d = lambda lst : ols("isinoctant_distal ~ C(angle, Helmert)", data=cluster_df[cluster_df["angle"].isin(lst)]).fit()
+        helmert_rodrigo_0vs_results_d.append(helmert_d([0,45,90,135,180]).f_pvalue < p)
+        helmert_rodrigo_45vs_results_d.append(helmert_d([45,90,135,180]).f_pvalue < p)
+        helmert_rodrigo_90vs_results_d.append(helmert_d([90,135,180]).f_pvalue < p)
 
-    # TTESTS
-    ttest = lambda ang : stats.ttest_1samp(cluster_df[cluster_df["angle"] == ang].groupby("agent").mean()["isinoctant_proximal"],0.125).pvalue
-    ttest2 = lambda ang : stats.ttest_1samp(cluster_df[cluster_df["angle"] == ang].groupby("agent").mean()["isinoctant_distal"],0.125).pvalue
-    ttest_rodrigo_results.append(ttest(0) < p and ttest(45) < p and ttest(90) < p and ttest(135) < p and ttest(180) < p and ttest2(0) < p and ttest2(45) < p)
-    print("Helmert tests")
-    print("p < 0.05 on 0° versus others (proximal beacon): ", helmert_p([0,45,90,135,180]).f_pvalue < p)
-    print("p < 0.05 on 45° versus others (proximal beacon): ",helmert_p([45,90,135,180]).f_pvalue < p)
-    print("p < 0.05 on 90° versus others (proximal beacon): ",helmert_p([90,135,180]).f_pvalue < p)
-    print("p < 0.05 on 0° versus others (distal beacon): ",helmert_d([0,45,90,135,180]).f_pvalue < p)
-    print("p < 0.05 on 45° versus others (distal beacon): ",helmert_d([45,90,135,180]).f_pvalue < p)
-    print("p < 0.05 on 90° versus others (distal beacon): ",helmert_d([90,135,180]).f_pvalue < p)
-    print()
-    print("ANOVAS")
-    print("Effect of angle on proximal beacon's octant occupation: ",tmp["PR(>F)"]["C(angle)"]<p)
-    print("Effect of angle on distal beacon's octant occupation: ",tmp2["PR(>F)"]["C(angle)"]<p)
-    print()
-    print("TTESTS")
-    print("Proximal beacon's octant occupation different from chance: ", ttest(0) < p)
-    print("Proximal beacon's octant occupation different from chance: ", ttest(45) < p)
-    print("Proximal beacon's octant occupation different from chance: ", ttest(90) < p)
-    print("Proximal beacon's octant occupation different from chance: ", ttest(135) < p)
-    print("Proximal beacon's octant occupation different from chance: ", ttest(180) < p)
-    print("Distal beacon's octant occupation different from chance: ", ttest2(0) < p)
-    print("Distal beacon's octant occupation different from chance: ", ttest2(45) < p)
-    print("Distal beacon's octant occupation different from chance: ", ttest2(90) < p)
-    print("Distal beacon's octant occupation different from chance: ", ttest2(135) < p)
-    print("Distal beacon's octant occupation different from chance: ", ttest2(180) < p)
+        # ANOVA
+        model = ols('isinoctant_proximal ~ C(angle) + C(angle) + C(angle):C(angle)', data=cluster_df).fit()
+        tmp = sm.stats.anova_lm(model, typ=2)
+        model2 = ols('isinoctant_distal ~ C(angle) + C(angle) + C(angle):C(angle)', data=cluster_df).fit()
+        tmp2 = sm.stats.anova_lm(model2, typ=2)
+        anova_rodrigo_results.append(tmp["PR(>F)"]["C(angle)"]<p and tmp2["PR(>F)"]["C(angle)"]<p)
+
+        # TTESTS
+        ttest = lambda ang : stats.ttest_1samp(cluster_df[cluster_df["angle"] == ang].groupby("agent").mean()["isinoctant_proximal"],0.125).pvalue
+        ttest2 = lambda ang : stats.ttest_1samp(cluster_df[cluster_df["angle"] == ang].groupby("agent").mean()["isinoctant_distal"],0.125).pvalue
+        ttest_rodrigo_results.append(ttest(0) < p and ttest(45) < p and ttest(90) < p and ttest(135) < p and ttest(180) < p and ttest2(0) < p and ttest2(45) < p)
+
+        if show_plots:
+            print()
+            print("Performing statistical analyses...")
+            print()
+            print("Helmert tests")
+            print("p < 0.05 on 0° versus others (proximal beacon): ", helmert_p([0,45,90,135,180]).f_pvalue < p)
+            print("p < 0.05 on 45° versus others (proximal beacon): ",helmert_p([45,90,135,180]).f_pvalue < p)
+            print("p < 0.05 on 90° versus others (proximal beacon): ",helmert_p([90,135,180]).f_pvalue < p)
+            print("p < 0.05 on 0° versus others (distal beacon): ",helmert_d([0,45,90,135,180]).f_pvalue < p)
+            print("p < 0.05 on 45° versus others (distal beacon): ",helmert_d([45,90,135,180]).f_pvalue < p)
+            print("p < 0.05 on 90° versus others (distal beacon): ",helmert_d([90,135,180]).f_pvalue < p)
+            print()
+            print("ANOVAS")
+            print("Effect of angle on proximal beacon's octant occupation: ",tmp["PR(>F)"]["C(angle)"]<p)
+            print("Effect of angle on distal beacon's octant occupation: ",tmp2["PR(>F)"]["C(angle)"]<p)
+            print()
+            print("TTESTS")
+            print("Proximal beacon's octant occupation different from chance: at 0° condition", ttest(0) < p)
+            print("Proximal beacon's octant occupation different from chance: at 45° condition", ttest(45) < p)
+            print("Proximal beacon's octant occupation different from chance: at 90° condition", ttest(90) < p)
+            print("Proximal beacon's octant occupation different from chance: at 135° condition", ttest(135) < p)
+            print("Proximal beacon's octant occupation different from chance: at 180° condition", ttest(180) < p)
+            print("Distal beacon's octant occupation different from chance: at 0° condition", ttest2(0) < p)
+            print("Distal beacon's octant occupation different from chance: at 45° condition", ttest2(45) < p)
+            print("Distal beacon's octant occupation different from chance: at 90° condition", ttest2(90) < p)
+            print("Distal beacon's octant occupation different from chance: at 135° condition", ttest2(135) < p)
+            print("Distal beacon's octant occupation different from chance: at 180° condition", ttest2(180) < p)
+            print()
+
+        f = open(path+"/statistical_tests_results.txt",'w')
+        print("Helmert tests", file=f)
+        print("p < 0.05 on 0° versus others (proximal beacon): ", helmert_p([0,45,90,135,180]).f_pvalue < p, file=f)
+        print("p < 0.05 on 45° versus others (proximal beacon): ",helmert_p([45,90,135,180]).f_pvalue < p, file=f)
+        print("p < 0.05 on 90° versus others (proximal beacon): ",helmert_p([90,135,180]).f_pvalue < p, file=f)
+        print("p < 0.05 on 0° versus others (distal beacon): ",helmert_d([0,45,90,135,180]).f_pvalue < p, file=f)
+        print("p < 0.05 on 45° versus others (distal beacon): ",helmert_d([45,90,135,180]).f_pvalue < p, file=f)
+        print("p < 0.05 on 90° versus others (distal beacon): ",helmert_d([90,135,180]).f_pvalue < p, file=f)
+        print("", file=f)
+        print("ANOVAS", file=f)
+        print("Effect of angle on proximal beacon's octant occupation: ",tmp["PR(>F)"]["C(angle)"]<p, file=f)
+        print("Effect of angle on distal beacon's octant occupation: ",tmp2["PR(>F)"]["C(angle)"]<p, file=f)
+        print("", file=f)
+        print("TTESTS", file=f)
+        print("Proximal beacon's octant occupation different from chance at 0° condition: ", ttest(0) < p, file=f)
+        print("Proximal beacon's octant occupation different from chance at 45° condition: ", ttest(45) < p, file=f)
+        print("Proximal beacon's octant occupation different from chance at 90° condition: ", ttest(90) < p, file=f)
+        print("Proximal beacon's octant occupation different from chance at 135° condition: ", ttest(135) < p, file=f)
+        print("Proximal beacon's octant occupation different from chance at 180° condition: ", ttest(180) < p, file=f)
+        print("Distal beacon's octant occupation different from chance: at 0° condition", ttest2(0) < p, file=f)
+        print("Distal beacon's octant occupation different from chance: at 45° condition", ttest2(45) < p, file=f)
+        print("Distal beacon's octant occupation different from chance: at 90° condition", ttest2(90) < p, file=f)
+        print("Distal beacon's octant occupation different from chance: at 135° condition", ttest2(135) < p, file=f)
+        print("Distal beacon's octant occupation different from chance: at 180° condition", ttest2(180) < p, file=f)
+        f.close()
+    except:
+        print("Statistical test failed (there might not be enough data)")
+        print()
+        f = open(path+"/statistical_tests_results.txt",'w')
+        print("Statistical test failed (there might not be enough data)", file=f)
+        f.close()
 
 
-def plot_rodrigo(results_folder, n_agents):
+def plot_rodrigo(results_folder, n_agents, show_plots, save_plots):
     """
     Plot a histogram of the mean proportion of occupancy of distal landmark octant and proximal landmark octant
     for each angle condition.
@@ -417,10 +397,14 @@ def plot_rodrigo(results_folder, n_agents):
     :type results_folder: str
     :param n_agents: number of simulations stored in results_folder
     :type n_agents: int
+    :param show_plots: whether to display any created plot at the end of the simulations
+    :type show_plot: boolean
+    :param save_plots: whether to save any created plots in the results folder at the end of the simulations
+    :type save_plots: boolean
     """
     # get the mean occupancy of octants in each 10 conditions + the confidence interval (y) for each condition
     (dist0, dist45, dist90, dist135, dist180, prox0, prox45, prox90, prox135, prox180, ydist0, ydist45, ydist90, ydist135, ydist180, yprox0, yprox45, yprox90, yprox135, yprox180) = get_values_rodrigo(results_folder, n_agents)
-
+    figure_folder = os.path.join(results_folder, 'figs')
     fig, axs = plt.subplots(2, 2, figsize=(15,12))
 
     axs[0,0].set_title("Original results")
@@ -445,14 +429,15 @@ def plot_rodrigo(results_folder, n_agents):
     axs[1,1].set_ylabel("Proportion of steps searching in the Frame octant")
     axs[1,1].set_xlabel("Tests")
 
-    plt.show()
+    if show_plots:
+        plt.show()
+    if save_plots:
+        plt.savefig(os.path.join(figure_folder, 'Mean proportion of occupation of octants.png'))
+
     plt.close()
-    run_statistical_tests_rodrigo(results_folder, n_agents)
-    # check and print if the group of simulations at results_folder validate the multiple required statistical test, originally performed in rodrigo 2006
-    # try:
-    #     run_statistical_tests_rodrigo(results_folder)
-    # except:
-    #     print("Statical analysis failed (there might not be enough data)")
+
+    run_statistical_tests_rodrigo(results_folder, n_agents, show_plots)
+
 
 
 def get_mean_occupation_octant(angle, df_analysis, coords):
@@ -559,17 +544,23 @@ def get_maze_rodrigo(maze_size, landmark_dist, edge_states):
         return possible_platform_states, g
 
 
-def create_path_rodrigo(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A_alpha, A_beta, landmark_dist, HPCmode, time_limit, edge_states, lesion_HPC, lesion_DLS, dolle, inv_temp=None, inv_temp_gd=None, inv_temp_mf=None, arbi_inv_temp = None, directory=None):
+def create_path_rodrigo(env_params, ag_params, directory=None):
     """
     Create a path to the directory where the data of all agents from a group of
     simulations with identical parameters has been stored
 
-    Identical parameters to perform_rodrigo()
+    :param env_params: contains all the environment's parameters, to concatenate in the path (see EnvironmentParams for details)
+    :type env_params: EnvironmentParams
+    :param ag_params: contains all the agent's parameters, to concatenate in the path (see AgentsParams for details)
+    :type ag_params: AgentsParams
+    :param directory: optional directory where to store all the results
+    :type directory: str
+
     :returns: the path of the results folder
     :return type: str
     """
 
-    path = create_path(n_agents, mf_allo, sr_lr, q_lr, gamma, eta, alpha1, beta1, A_alpha, A_beta, landmark_dist, HPCmode, time_limit, edge_states, lesion_HPC, lesion_DLS, dolle, inv_temp=inv_temp, inv_temp_gd=inv_temp_gd, inv_temp_mf=inv_temp_mf, arbi_inv_temp = arbi_inv_temp)
+    path = create_path(env_params, ag_params)
     path = "rodrigo_"+path
     if directory is not None: # used for the grid-search, where the user gives a name to a hierachically higher directory
         path = directory+"/"+path

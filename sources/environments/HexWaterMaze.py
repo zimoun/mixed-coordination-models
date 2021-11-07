@@ -616,3 +616,35 @@ class HexWaterMaze(Environment):
             agent.update(previous_state, reward, s, act, ego_a, orientation)
 
         return pd.DataFrame.from_dict(agent.results) # returns the agent's and environment's saved variables (to put in log files)
+
+
+class EnvironmentParams():
+
+    """
+    :ivar maze_size: diameter of the Morris pool (number of states)
+    :vartype maze_size: int
+    :ivar n_trials: number of trials to run at each session
+    :vartype n_trials: int
+    :ivar n_sessions: number of sessions to run, for each agent
+    :vartype n_sessions: int
+    :ivar n_agents: number of simulations (with a different agent for each) to run
+    :vartype n_agents: int
+    :param init_sr: how the SR weights must be initialized, if the HPC is modeled by the SR (either "zero", "rw", "identity" or "opt")
+    :type init_sr: str
+    :ivar landmark_dist: number of states separating the landmark from the platform
+    :vartype landmark_dist: int
+    :ivar starting_states: list of eligible starting states
+    :vartype starting_states: list of int
+    :ivar time_limit: max number of timestep to find the reward, the episode is forced to end if reached
+    :vartype time_limit: int
+    """
+
+    def __init__(self):
+        self.maze_size = None
+        self.n_sessions = None
+        self.n_trials = None
+        self.n_agents = None
+        self.init_sr = None
+        self.landmark_dist = None
+        self.starting_states = None
+        self.time_limit = None

@@ -114,13 +114,15 @@ def perform_group_pearce(env_params, ag_params, show_plots = True, save_plots = 
             agents.append(agent)
 
             # show single agent performances
-            create_single_agent_plot(results_folder, agent, agent_df, n_agent, save_plots)
+            if show_plots or save_plots:
+                create_single_agent_plot(results_folder, agent, agent_df, n_agent, save_plots)
 
             clear_output() # erase standard output
 
         # create plots showing mean performances of all the agents
-        plot_main_pearce_perfs(results_folder, env_params.n_trials, env_params.n_agents, env_params.n_sessions, show_plots, save_plots)
-        plot_main_pearce_quivs(results_folder, agents, show_plots, save_plots) # show preferred heading-vectors of each strategy
+        if show_plots or save_plots:
+            plot_main_pearce_perfs(results_folder, env_params.n_trials, env_params.n_agents, env_params.n_sessions, show_plots, save_plots)
+            plot_main_pearce_quivs(results_folder, agents, show_plots, save_plots) # show preferred heading-vectors of each strategy
 
         # take a lot of memory
         if save_agents:
@@ -130,9 +132,10 @@ def perform_group_pearce(env_params, ag_params, show_plots = True, save_plots = 
 
     # if an identical simulation has already been saved
     else:
-        plot_main_pearce_perfs(saved_results_folder, env_params.n_trials, env_params.n_agents, env_params.n_sessions, show_plots, save_plots)
-        agents = charge_agents(saved_results_folder+"/agents.p")
-        plot_main_pearce_quivs(saved_results_folder, agents, show_plots, save_plots) # show heading-vectors for each state in the water-maze
+        if show_plots or save_plots:
+            plot_main_pearce_perfs(saved_results_folder, env_params.n_trials, env_params.n_agents, env_params.n_sessions, show_plots, save_plots)
+            agents = charge_agents(saved_results_folder+"/agents.p")
+            plot_main_pearce_quivs(saved_results_folder, agents, show_plots, save_plots) # show heading-vectors for each state in the water-maze
 
     # delete all agents, to prevent memory error
     if 'agents' in locals():
@@ -163,7 +166,7 @@ def plot_main_pearce_perfs(results_folder, n_trials, n_agents, n_sessions, show_
     :type save_plots: boolean
     """
 
-    print("Plotting the mean performances of the agents...")
+    print("Computing the mean performances of the agents...")
 
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(17,11))
     fig.suptitle("Mean performances of the agents", fontsize = 14)
@@ -254,7 +257,8 @@ def plot_main_pearce_quivs(results_folder, agents, show_plots, save_plots):
     :type save_plots: boolean
     """
 
-    print("Plotting the heading-vectors of each strategy...")
+    print("Computing the heading-vectors of each strategy...")
+    print()
 
     figure_folder = os.path.join(results_folder, 'figs')
 
@@ -324,7 +328,7 @@ def create_single_agent_plot(results_folder, agent, agent_df, n_agent, save_plot
     plt.close()
 
 
-def plot_pearce(env_params, ag_params, ci=None, experimental_data=None):
+def plot_pearce(env_params, ag_params, ci=None, experimental_data=None, show_plots=True, save_plots=False, directory=None):
     """
     Plot the evolution of the escape time across sessions, for both the control and HPC-lesiond group.
     For each simulated group, plot a line for the first trial and another for the last.
@@ -340,10 +344,18 @@ def plot_pearce(env_params, ag_params, ci=None, experimental_data=None):
     :param experimental_data_pearce: The original data obtained in Pearce's main experiment, to compare to our simulation data
     :type experimental_data_pearce: dict of {str:list}
     """
+
+    if directory is not None:
+        directory_control = directory+"/control_group"
+        directory_lesion = directory+"/lesioned_group"
+    else:
+        directory_control = None
+        directory_lesion = None
+
     ag_params.lesion_HPC = False
-    results_folder_normal = create_path_main_pearce(env_params, ag_params)
+    results_folder_normal = create_path_main_pearce(env_params, ag_params, directory_control)
     ag_params.lesion_HPC = True
-    results_folder_lesion = create_path_main_pearce(env_params, ag_params)
+    results_folder_lesion = create_path_main_pearce(env_params, ag_params, directory_lesion)
     ag_params.lesion_HPC = False
 
     if os.path.exists("../results/"+results_folder_normal) and os.path.exists("../results/"+results_folder_lesion): # if results has not been saved
@@ -433,8 +445,14 @@ def plot_pearce(env_params, ag_params, ci=None, experimental_data=None):
         expected_data = [control_1bis, control_4bis, hippo_1bis, hippo_4bis]
         se = get_MSLE(real_data, expected_data, relative=True)
         print("Mean Square Error: ", se)
+    if show_plots:
         plt.show()
-        plt.close()
+    if save_plots:
+        try:
+            fig.savefig(os.path.join("../results/"+directory, 'full_results.png'))
+        except:
+            fig.savefig(os.path.join("../saved_results/"+directory, 'full_results.png'))
+    plt.close()
 
 
 def determine_platform_seq(env, platform_states, n_sessions):

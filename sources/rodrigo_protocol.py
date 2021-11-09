@@ -240,12 +240,14 @@ def perform_group_rodrigo(env_params, ag_params, show_plots=True, save_plots=Tru
             file_to_store.close()
 
         # plot a histogram of the mean occupancy of distal landmark octant and proximal landmark octant for each angle condition
-        plot_rodrigo(results_folder, env_params.n_agents, show_plots, save_plots)
+        if show_plots or save_plots:
+            plot_rodrigo(results_folder, env_params.n_agents, show_plots, save_plots)
 
     # if an identical simulation has already been saved
     else:
         # plot a histogram of the mean occupancy of distal landmark octant and proximal landmark octant for each angle condition
-        plot_rodrigo(saved_results_folder, env_params.n_agents, show_plots, save_plots)
+        if show_plots or save_plots:
+            plot_rodrigo(saved_results_folder, env_params.n_agents, show_plots, save_plots)
 
     # delete all agents, to prevent memory error
     if 'agents' in locals():
@@ -277,7 +279,7 @@ def run_statistical_tests_rodrigo(path, n_agents, show_plots):
         print("Concatenating all data")
         df_analysis = pd.concat(agents_df_lst)
 
-        print("Computing proximal and distal octants mean occupation on test episodes")
+        print("Computing proximal and distal octants mean proportion of occupation on test episodes")
         dist0 = get_mean_occupation_octant(0, df_analysis, coords)
         dist45 = get_mean_occupation_octant(45, df_analysis, coords)
         dist90 = get_mean_occupation_octant(90, df_analysis, coords)
@@ -343,16 +345,16 @@ def run_statistical_tests_rodrigo(path, n_agents, show_plots):
             print("Effect of angle on distal beacon's octant occupation: ",tmp2["PR(>F)"]["C(angle)"]<p)
             print()
             print("TTESTS")
-            print("Proximal beacon's octant occupation different from chance: at 0° condition", ttest(0) < p)
-            print("Proximal beacon's octant occupation different from chance: at 45° condition", ttest(45) < p)
-            print("Proximal beacon's octant occupation different from chance: at 90° condition", ttest(90) < p)
-            print("Proximal beacon's octant occupation different from chance: at 135° condition", ttest(135) < p)
-            print("Proximal beacon's octant occupation different from chance: at 180° condition", ttest(180) < p)
-            print("Distal beacon's octant occupation different from chance: at 0° condition", ttest2(0) < p)
-            print("Distal beacon's octant occupation different from chance: at 45° condition", ttest2(45) < p)
-            print("Distal beacon's octant occupation different from chance: at 90° condition", ttest2(90) < p)
-            print("Distal beacon's octant occupation different from chance: at 135° condition", ttest2(135) < p)
-            print("Distal beacon's octant occupation different from chance: at 180° condition", ttest2(180) < p)
+            print("Proximal beacon's octant occupation different from chance: at 0° condition: ", ttest(0) < p)
+            print("Proximal beacon's octant occupation different from chance: at 45° condition: ", ttest(45) < p)
+            print("Proximal beacon's octant occupation different from chance: at 90° condition: ", ttest(90) < p)
+            print("Proximal beacon's octant occupation different from chance: at 135° condition: ", ttest(135) < p)
+            print("Proximal beacon's octant occupation different from chance: at 180° condition: ", ttest(180) < p)
+            print("Distal beacon's octant occupation different from chance: at 0° condition: ", ttest2(0) < p)
+            print("Distal beacon's octant occupation different from chance: at 45° condition: ", ttest2(45) < p)
+            print("Distal beacon's octant occupation different from chance: at 90° condition: ", ttest2(90) < p)
+            print("Distal beacon's octant occupation different from chance: at 135° condition: ", ttest2(135) < p)
+            print("Distal beacon's octant occupation different from chance: at 180° condition: ", ttest2(180) < p)
             print()
 
         f = open(path+"/statistical_tests_results.txt",'w')
@@ -374,11 +376,11 @@ def run_statistical_tests_rodrigo(path, n_agents, show_plots):
         print("Proximal beacon's octant occupation different from chance at 90° condition: ", ttest(90) < p, file=f)
         print("Proximal beacon's octant occupation different from chance at 135° condition: ", ttest(135) < p, file=f)
         print("Proximal beacon's octant occupation different from chance at 180° condition: ", ttest(180) < p, file=f)
-        print("Distal beacon's octant occupation different from chance: at 0° condition", ttest2(0) < p, file=f)
-        print("Distal beacon's octant occupation different from chance: at 45° condition", ttest2(45) < p, file=f)
-        print("Distal beacon's octant occupation different from chance: at 90° condition", ttest2(90) < p, file=f)
-        print("Distal beacon's octant occupation different from chance: at 135° condition", ttest2(135) < p, file=f)
-        print("Distal beacon's octant occupation different from chance: at 180° condition", ttest2(180) < p, file=f)
+        print("Distal beacon's octant occupation different from chance: at 0° condition: ", ttest2(0) < p, file=f)
+        print("Distal beacon's octant occupation different from chance: at 45° condition: ", ttest2(45) < p, file=f)
+        print("Distal beacon's octant occupation different from chance: at 90° condition: ", ttest2(90) < p, file=f)
+        print("Distal beacon's octant occupation different from chance: at 135° condition: ", ttest2(135) < p, file=f)
+        print("Distal beacon's octant occupation different from chance: at 180° condition: ", ttest2(180) < p, file=f)
         f.close()
     except:
         print("Statistical test failed (there might not be enough data)")
@@ -422,11 +424,11 @@ def plot_rodrigo(results_folder, n_agents, show_plots, save_plots):
 
     axs[0,1].bar(["0°", "45°", "90°", "135°", "180°"], [prox0, prox45, prox90, prox135, prox180], yerr=[yprox0, yprox45, yprox90, yprox135, yprox180], color='gray', edgecolor="black", )
     axs[0,1].set_title("Our results")
-    axs[0,1].set_ylabel("Proportion of steps searching in the Beacon octant")
+    axs[0,1].set_ylabel("Proportion of time searching in the proximal landmark octant")
     axs[0,1].set_xlabel("Tests")
 
     axs[1,1].bar(["0°", "45°", "90°", "135°", "180°"], [dist0, dist45, dist90, dist135, dist180], yerr=[ydist0, ydist45, ydist90, ydist135, ydist180], color='gray', edgecolor="black")
-    axs[1,1].set_ylabel("Proportion of steps searching in the Frame octant")
+    axs[1,1].set_ylabel("Proportion of time searching in the distal landmark octant")
     axs[1,1].set_xlabel("Tests")
 
     if show_plots:
@@ -437,7 +439,6 @@ def plot_rodrigo(results_folder, n_agents, show_plots, save_plots):
     plt.close()
 
     run_statistical_tests_rodrigo(results_folder, n_agents, show_plots)
-
 
 
 def get_mean_occupation_octant(angle, df_analysis, coords):

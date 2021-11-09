@@ -27,11 +27,9 @@ def perform_full_rodrigo():
 
         env_params = EnvironmentParams()
         env_params.maze_size = 10
-        env_params.n_sessions = 11
-        env_params.n_trials = 4
-        env_params.n_agents = 3
+        env_params.n_agents = 100
         env_params.init_sr = "zero"
-        env_params.landmark_dist = 4
+        env_params.landmark_dist = 0
         env_params.time_limit = 500
         env_params.starting_states = [243,230,270,257]
 
@@ -58,10 +56,8 @@ def perform_full_rodrigo():
 
         env_params = EnvironmentParams()
         env_params.maze_size = 10
-        env_params.n_sessions = 11
-        env_params.n_trials = 4
-        env_params.n_agents = 1
-        env_params.landmark_dist = 4
+        env_params.n_agents = 100
+        env_params.landmark_dist = 0
         env_params.time_limit = 500
         env_params.starting_states = [243,230,270,257]
 
@@ -73,7 +69,7 @@ def perform_full_rodrigo():
         ag_params.inv_temp_mf = 46
         ag_params.arbi_inv_temp = 46
         ag_params.gamma = 0.86
-        ag_params.arbi_learning_rate = 0.031 # reliability learning rate
+        ag_params.arbi_learning_rate = 0.031
         ag_params.HPCmode = "MB"
         ag_params.lesion_HPC = False
         ag_params.lesion_DLS = False
@@ -87,33 +83,32 @@ def perform_full_rodrigo():
 
         env_params = EnvironmentParams()
         env_params.maze_size = 10
-        env_params.n_sessions = 11
-        env_params.n_trials = 4
-        env_params.n_agents = 1
-        #env_params.init_sr = "zero"
-        env_params.landmark_dist = 4
+        env_params.n_agents = 100
+        env_params.init_sr = "zero"
+        env_params.landmark_dist = 0
         env_params.time_limit = 500
         env_params.starting_states = [243,230,270,257]
 
         ag_params = AgentsParams()
-        ag_params.mf_allo = True
-        ag_params.hpc_lr = 0.07
-        ag_params.q_lr = 0.028
-        ag_params.inv_temp = 27
-        ag_params.inv_temp_gd = 27
-        ag_params.inv_temp_mf = 27
-        ag_params.arbi_inv_temp = 27
-        ag_params.gamma = 0.745
-        ag_params.eta = 0.053 # reliability learning rate
-        #ag_params.alpha1 = 0.01
-        #ag_params.beta1 = 0.1
-        #ag_params.A_alpha = 3.2 # Steepness of transition curve MF to SR
-        #ag_params.A_beta = 1.1 # Steepness of transition curve SR to MF
-        ag_params.HPCmode = "MB" # 'MB' or 'SR'
-        ag_params.lesion_HPC = True
+        ag_params.mf_allo = False
+        ag_params.hpc_lr = 0.069
+        ag_params.q_lr = 0.146
+        ag_params.inv_temp = 13
+        # ag_params.inv_temp_gd = 46
+        # ag_params.inv_temp_mf = 46
+        # ag_params.arbi_inv_temp = 46
+        # ag_params.arbi_learnin_rate = 0.031
+        ag_params.gamma = 0.853
+        ag_params.eta = 0.03 # reliability learning rate
+        ag_params.alpha1 = 0.01
+        ag_params.beta1 = 0.1
+        ag_params.A_alpha = 3.2 # Steepness of transition curve MF to SR
+        ag_params.A_beta = 1.1 # Steepness of transition curve SR to MF
+        ag_params.HPCmode = "SR" # or MB
+        ag_params.lesion_HPC = False
         ag_params.lesion_DLS = False
-        ag_params.dolle = True
-        ag_params.lesion_PFC = True
+        ag_params.dolle = False
+        # ag_params.lesion_PFC = True
 
         print()
         print("Performing "+str(env_params.n_agents)+" simulations with custom parameters")

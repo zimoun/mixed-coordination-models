@@ -5,7 +5,7 @@ warnings.filterwarnings('ignore')
 
 import sys
 from agents.agent import AgentsParams
-from pearce_protocol import perform_group_pearce
+from pearce_protocol import perform_group_pearce, plot_pearce
 from environments.HexWaterMaze import EnvironmentParams
 
 
@@ -13,7 +13,7 @@ def perform_full_pearce():
     """Allows the user to launch the complete (control group + HPC lesioned group) first experiment of Pearce 1998 using the command line
         First mandatory parameter: the name of the directory where to store the results
         Second optional parameter: which set of parameters to use, either 'best_geerts', 'best_dolle' or 'custom'
-        'custom' is a random set of parameters that is intended to be modified by the user to explore new models behaviors on Rodrigo's task
+        'custom' is a random set of parameters that is intended to be modified by the user to explore new models behaviors on Pearce's task
         'best_geerts' is the set of parameters that was found to produce the most biologically plausible behavior using geerts' coordination model
         'best_dolle' is the set of parameters that was found to produce the most biologically plausible behavior using dolle's' coordination model
         the best set of parameters for each models were found using a random grid-search (see grid_search module)
@@ -28,7 +28,7 @@ def perform_full_pearce():
         env_params.maze_size = 10
         env_params.n_sessions = 11
         env_params.n_trials = 4
-        env_params.n_agents = 3
+        env_params.n_agents = 100
         env_params.init_sr = "zero"
         env_params.landmark_dist = 4
         env_params.time_limit = 500
@@ -59,7 +59,7 @@ def perform_full_pearce():
         env_params.maze_size = 10
         env_params.n_sessions = 11
         env_params.n_trials = 4
-        env_params.n_agents = 1
+        env_params.n_agents = 100
         env_params.landmark_dist = 4
         env_params.time_limit = 500
         env_params.starting_states = [243,230,270,257]
@@ -72,7 +72,7 @@ def perform_full_pearce():
         ag_params.inv_temp_mf = 27
         ag_params.arbi_inv_temp = 27
         ag_params.gamma = 0.745
-        ag_params.arbi_learning_rate = 0.053 # reliability learning rate
+        ag_params.arbi_learning_rate = 0.053
         ag_params.HPCmode = "MB"
         ag_params.lesion_HPC = False
         ag_params.lesion_DLS = False
@@ -88,31 +88,32 @@ def perform_full_pearce():
         env_params.maze_size = 10
         env_params.n_sessions = 11
         env_params.n_trials = 4
-        env_params.n_agents = 1
-        #env_params.init_sr = "zero"
+        env_params.n_agents = 100
+        env_params.init_sr = "zero"
         env_params.landmark_dist = 4
         env_params.time_limit = 500
         env_params.starting_states = [243,230,270,257]
 
         ag_params = AgentsParams()
-        ag_params.mf_allo = True
-        ag_params.hpc_lr = 0.07
-        ag_params.q_lr = 0.028
-        ag_params.inv_temp = 27
+        ag_params.mf_allo = False
+        ag_params.hpc_lr = 0.088
+        ag_params.q_lr = 0.175
+        ag_params.inv_temp = 64
         ag_params.inv_temp_gd = 27
         ag_params.inv_temp_mf = 27
         ag_params.arbi_inv_temp = 27
-        ag_params.gamma = 0.745
-        ag_params.eta = 0.053 # reliability learning rate
-        #ag_params.alpha1 = 0.01
-        #ag_params.beta1 = 0.1
-        #ag_params.A_alpha = 3.2 # Steepness of transition curve MF to SR
-        #ag_params.A_beta = 1.1 # Steepness of transition curve SR to MF
-        ag_params.HPCmode = "MB" # 'MB' or 'SR'
-        ag_params.lesion_HPC = True
+        ag_params.arbi_learnin_rate = 0.053
+        ag_params.gamma = 0.92
+        ag_params.eta = 0.03 # reliability learning rate
+        ag_params.alpha1 = 0.01
+        ag_params.beta1 = 0.1
+        ag_params.A_alpha = 3.2 # Steepness of transition curve MF to SR
+        ag_params.A_beta = 1.1 # Steepness of transition curve SR to MF
+        ag_params.HPCmode = "SR"
+        ag_params.lesion_HPC = False
         ag_params.lesion_DLS = False
-        ag_params.dolle = True
-        ag_params.lesion_PFC = True
+        ag_params.dolle = False
+        #ag_params.lesion_PFC = True
 
         print()
         print("Performing "+str(env_params.n_agents*2)+" simulations with custom parameters")
@@ -133,6 +134,9 @@ def perform_full_pearce():
     perform_group_pearce(env_params, ag_params, directory=sys.argv[1]+"/lesioned_group", show_plots=False, save_plots=True)
 
     print("Saving data at "+str(sys.argv[1])+" directory                   ")
+
+    plot_pearce(env_params, ag_params, directory=sys.argv[1], show_plots=False, save_plots=True)
+
     print("Done")
     print()
     sys.exit()

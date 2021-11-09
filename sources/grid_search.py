@@ -1,6 +1,8 @@
 from rodrigo_protocol import perform_group_rodrigo, create_path_rodrigo, get_values_rodrigo, get_mean_occupation_octant, create_df
 from pearce_protocol import perform_group_pearce, create_path_main_pearce
+from environments.HexWaterMaze import EnvironmentParams
 from utils import isinoctant, get_MSLE, get_coords
+from agents.agent import AgentsParams
 
 from sklearn.metrics.pairwise import euclidean_distances
 from sklearn.metrics import mean_squared_log_error
@@ -160,17 +162,47 @@ def random_grid_search(directory, expe, n_datapoints, mf_allo, dolle, HPCmode, s
         try:
             if expe == "main_pearce":
 
-                lesion_HPC = False
-                lesion_DLS = False
+                env_params = EnvironmentParams()
+                env_params.maze_size = 10
+                env_params.n_sessions = 11
+                env_params.n_trials = 4
+                env_params.n_agents = 1
+                env_params.init_sr = "zero"
+                env_params.landmark_dist = 4
+                env_params.time_limit = 500
+                env_params.starting_states = [243,230,270,257]
+
+                ag_params = AgentsParams()
+                ag_params.mf_allo = mf_allo
+                ag_params.hpc_lr = srlr_real
+                ag_params.q_lr = qlr_real
+                ag_params.arbi_learning_rate = eta_real
+                ag_params.inv_temp = inv_temp_real
+                ag_params.inv_temp_gd = inv_temp_real
+                ag_params.inv_temp_mf = inv_temp_real
+                ag_params.arbi_inv_temp = inv_temp_real
+                ag_params.gamma = gamma_real
+                ag_params.eta = eta_real # reliability learning rate
+                ag_params.alpha1 = 0.01
+                ag_params.beta1 = 0.1
+                ag_params.A_alpha = 3.2 # Steepness of transition curve MF to SR
+                ag_params.A_beta = 1.1 # Steepness of transition curve SR to MF
+                ag_params.HPCmode = HPCmode
+                ag_params.lesion_HPC = False
+                ag_params.lesion_DLS = False
+                ag_params.dolle = dolle
+                ag_params.lesion_PFC= False
+
                 # run the simulation (control)
-                perform_group_pearce(10, 4, 11, 1, mf_allo, srlr_real, qlr_real, gamma_real, eta_real, 0.01, 0.1, 3.2, 1.1, 4, HPCmode, 500, [243,230,270,257], lesion_HPC, lesion_DLS, dolle, inv_temp=inv_temp_real, inv_temp_gd=inv_temp_real, inv_temp_mf=inv_temp_real, arbi_inv_temp=inv_temp_real, show_quiv=False, show_perfs=False, save_agents=False, create_plots=False, directory = directory+"/pearce_control", verbose = False)
+                ag_params.lesion_HPC = False
+                ag_params.lesion_DLS = False
+                perform_group_pearce(env_params, ag_params, show_plots=False, save_plots=False, save_agents=False, directory = directory+"/pearce_control", verbose = False)
+                results_folder_normal = create_path_main_pearce(env_params, ag_params, directory=directory+"/pearce_control")
 
-                lesion_HPC = True
                 # run the simulation (lesioned)
-                perform_group_pearce(10, 4, 11, 1, mf_allo, srlr_real, qlr_real, gamma_real, eta_real, 0.01, 0.1, 3.2, 1.1, 4, HPCmode, 500, [243,230,270,257], lesion_HPC, lesion_DLS, dolle, inv_temp=inv_temp_real, inv_temp_gd=inv_temp_real, inv_temp_mf=inv_temp_real, arbi_inv_temp=inv_temp_real, show_quiv=False, show_perfs=False, save_agents=False, create_plots=False, directory = directory+"/pearce_lesion", verbose = False)
-
-                results_folder_normal = create_path_main_pearce(10, 4, 11, 1, mf_allo, srlr_real, qlr_real, gamma_real, eta_real, 0.01, 0.1, 3.2, 1.1, 4, HPCmode, 500, [243,230,270,257], False, False, dolle, inv_temp=inv_temp_real, inv_temp_gd=inv_temp_real, inv_temp_mf=inv_temp_real, arbi_inv_temp = inv_temp_real, directory=directory+"/pearce_control")
-                results_folder_lesion = create_path_main_pearce(10, 4, 11, 1, mf_allo, srlr_real, qlr_real, gamma_real, eta_real, 0.01, 0.1, 3.2, 1.1, 4, HPCmode, 500, [243,230,270,257], True, False, dolle, inv_temp=inv_temp_real, inv_temp_gd=inv_temp_real, inv_temp_mf=inv_temp_real, arbi_inv_temp = inv_temp_real, directory=directory+"/pearce_lesion")
+                ag_params.lesion_HPC = True
+                perform_group_pearce(env_params, ag_params, show_plots=False, save_plots=False, save_agents=False, directory = directory+"/pearce_lesion", verbose = False)
+                results_folder_lesion = create_path_main_pearce(env_params, ag_params, directory=directory+"/pearce_lesion")
 
                 # retrieve the simulation results as a simplified dataframe
                 df_normal = create_df(results_folder_normal, 1)
@@ -180,8 +212,10 @@ def random_grid_search(directory, expe, n_datapoints, mf_allo, dolle, HPCmode, s
                 # an additional simulation is performed, with a deactivated arbitrator on
                 # HPC-lesioned condition (to systematically reject the HPC Q-values)
                 if dolle:
-                    perform_group_pearce(10, 4, 11, 1, mf_allo, srlr_real, qlr_real, gamma_real, eta_real, 0.01, 0.1, 3.2, 1.1, 4, HPCmode, 500, [243,230,270,257], lesion_HPC, lesion_DLS, dolle, inv_temp=inv_temp_real, inv_temp_gd=inv_temp_real, inv_temp_mf=inv_temp_real, arbi_inv_temp=inv_temp_real, show_quiv=False, show_perfs=False, save_agents=False, create_plots=False, directory = directory+"/pearce_noPFC", verbose = False, lesion_PFC=True)
-                    results_folder_lesion_noHPC = create_path_main_pearce(10, 4, 11, 1, mf_allo, srlr_real, qlr_real, gamma_real, eta_real, 0.01, 0.1, 3.2, 1.1, 4, HPCmode, 500, [243,230,270,257], True, False, dolle, inv_temp=inv_temp_real, inv_temp_gd=inv_temp_real, inv_temp_mf=inv_temp_real, arbi_inv_temp = inv_temp_real, directory=directory+"/pearce_noPFC")
+                    ag_params.lesion_PFC=True
+                    ag_params.lesion_HPC=True
+                    perform_group_pearce(show_plots=False, save_plots=False, save_agents=False, directory = directory+"/pearce_noPFC", verbose = False)
+                    results_folder_lesion_noHPC = create_path_main_pearce(env_params, ag_params, directory=directory+"/pearce_noPFC")
                     df_lesion_noHPC = create_df(results_folder_lesion_noHPC, 1)
 
                 df = df_normal.reset_index()
@@ -221,10 +255,40 @@ def random_grid_search(directory, expe, n_datapoints, mf_allo, dolle, HPCmode, s
 
 
             if expe == "rodrigo":
+                env_params = EnvironmentParams()
+                env_params.maze_size = 10
+                env_params.n_sessions = 11
+                env_params.n_trials = 4
+                env_params.n_agents = 1
+                env_params.init_sr = "zero"
+                env_params.landmark_dist = 0
+                env_params.time_limit = 500
+                env_params.starting_states = [243,230,270,257]
+
+                ag_params = AgentsParams()
+                ag_params.mf_allo = mf_allo
+                ag_params.hpc_lr = srlr_real
+                ag_params.q_lr = qlr_real
+                ag_params.arbi_learning_rate = eta_real
+                ag_params.inv_temp = inv_temp_real
+                ag_params.inv_temp_gd = inv_temp_real
+                ag_params.inv_temp_mf = inv_temp_real
+                ag_params.arbi_inv_temp = inv_temp_real
+                ag_params.gamma = gamma_real
+                ag_params.eta = eta_real # reliability learning rate
+                ag_params.alpha1 = 0.01
+                ag_params.beta1 = 0.1
+                ag_params.A_alpha = 3.2 # Steepness of transition curve MF to SR
+                ag_params.A_beta = 1.1 # Steepness of transition curve SR to MF
+                ag_params.HPCmode = HPCmode
+                ag_params.lesion_HPC = False
+                ag_params.lesion_DLS = False
+                ag_params.dolle = dolle
+                ag_params.lesion_PFC= False
 
                 # run the simulation
-                perform_group_rodrigo(1, mf_allo, srlr_real, qlr_real, gamma_real, eta_real, 0.01, 0.1, 3.2, 1.1, 0, HPCmode, 500, [243,230,270,257], False, False, dolle, inv_temp=inv_temp_real, inv_temp_gd=inv_temp_real, inv_temp_mf=inv_temp_real, arbi_inv_temp = inv_temp_real, directory=directory+"/rodrigo", save_agents=False, verbose=False, create_plots=False)
-                results_folder = create_path_rodrigo(1, mf_allo, srlr_real, qlr_real, gamma_real, eta_real, 0.01, 0.1, 3.2, 1.1, 0, HPCmode, 500, [243,230,270,257], False, False, dolle, inv_temp=inv_temp_real, inv_temp_gd=inv_temp_real, inv_temp_mf=inv_temp_real, arbi_inv_temp = inv_temp_real, directory=directory+"/rodrigo")
+                perform_group_rodrigo(env_params, ag_params, directory=directory+"/rodrigo", show_plots=False, save_plots=False, save_agents=False, verbose=False)
+                results_folder = create_path_rodrigo(env_params, ag_params, directory=directory+"/rodrigo")
                 # retrieve the mean occupation time of different octants in the raw results logs
                 (dist0, dist45, dist90, dist135, dist180, prox0, prox45, prox90, prox135, prox180, ydist0, ydist45, ydist90, ydist135, ydist180, yprox0, yprox45, yprox90, yprox135, yprox180) = get_values_rodrigo(results_folder, 1)
                 # associates simulation mean performances to parameters combination

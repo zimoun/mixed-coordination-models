@@ -1,3 +1,4 @@
+import random
 import numpy as np
 import pandas as pd
 from agents.agent import Agent
@@ -136,6 +137,11 @@ class CombinedAgent(Agent):
         # selection of the preferred action in the allocentric and egocentric frame
         allo_a = self.softmax_selection(Q=Q_combined, inv_temp=self.inv_temp)
         ego_a = self.DLS.get_ego_action(allo_a, orientation)
+
+        if self.lesion_striatum and self.lesion_hippocampus:
+            allo_a = random.randint(0, 5)
+            ego_a = self.DLS.get_ego_action(allo_a, orientation)
+
         return allo_a, ego_a
 
     def update(self, previous_state, reward, s, allo_a, ego_a, orientation):

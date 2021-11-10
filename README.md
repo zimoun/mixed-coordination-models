@@ -44,35 +44,32 @@ of Rodrigo (2006) and third experiment of Pearce (1998).
 All scripts take two arguments:
  - A first mandatory parameter: the name of the directory where to store the results
  - A second optional parameter: which set of parameters to use, either 'best_geerts', 'best_dolle' or 'custom'
-'custom' is a random set of parameters that is intended to be modified by the user to explore new models behaviors on the task.
-'best_geerts' is the set of parameters that was found to produce the most biologically plausible behavior using geerts' coordination model
-'best_dolle' is the set of parameters that was found to produce the most biologically plausible behavior using dolle's' coordination model
+'custom' is a random set of parameters that is intended to be modified by the user to explore new models behaviors on the task.</br>
+'best_geerts' is the set of parameters that was found to produce the most biologically plausible behavior using geerts' coordination model</br>
+'best_dolle' is the set of parameters that was found to produce the most biologically plausible behavior using dolle's' coordination model</br>
 the best set of parameters for each models were found using a random grid-search (see grid_search module)
 
-Example calls:
-  'python perform_full_rodrigo.py my_directory'
-  'python perform_full_rodrigo.py my_directory best_geerts'
-  'python perform_full_rodrigo.py test best_dolle'
-  'python perform_full_rodrigo.py my_directory custom'
-  'python perform_full_pearce.py my_directory'
-  'python perform_full_pearce.py my_directory best_geerts'
-  'python perform_full_pearce.py test best_dolle'
-  'python perform_full_pearce.py my_directory custom'
+Example calls:</br>
+  'python perform_full_rodrigo.py my_directory'</br>
+  'python perform_full_rodrigo.py my_directory best_geerts'</br>
+  'python perform_full_rodrigo.py test best_dolle'</br>
+  'python perform_full_rodrigo.py my_directory custom'</br>
+  'python perform_full_pearce.py my_directory'</br>
+  'python perform_full_pearce.py my_directory best_geerts'</br>
+  'python perform_full_pearce.py test best_dolle'</br>
+  'python perform_full_pearce.py my_directory custom'</br>
 
 The third experiment of Pearce 1998 need agents trained on the first experiment to be performed, thus it is mandatory
-to execute the first experiment of Pearce before executing the third. Example below.
-  'python perform_full_pearce.py my_directory best_geerts'
-  'python perform_full_exp3_pearce.py my_directory best_geerts'
+to execute the first experiment of Pearce before executing the third. Example below.</br>
+  'python perform_full_pearce.py my_directory best_geerts'</br>
+  'python perform_full_exp3_pearce.py my_directory best_geerts'</br>
 If your are using the custom argument, make sure that both perform_full_pearce.py and perform_full_exp3_pearce.py
 custom parameters are set to exactly the same values, decimals included, or the program will fail.
 
 A full simulation of Pearce 1998 experiment, with 100 agents implementing Geerts' model takes
-30 minutes to complete on a laptop (i5 2.30ghz), with Dolle's model, 2 hours.
+30 minutes to complete on a laptop (i5 2.30ghz), with Dolle's model, 2 hours.</br>
 A full simulation of Rodrigo 2006 experiment, with 100 agents implementing Geerts' model takes
-45 minutes to complete on a laptop (i5 2.30ghz), with Dolle's model, 3 hours.
-The third experiment of Pearce 1998 takes roughly 2 minutes to end with Geerts model, whereas it takes 8 minutes with Dolle's
-
-## Contributing
-Please contact thomas.misiek@etu.univ-amu.fr to report any problem or if you want to add something to the code
+45 minutes to complete on a laptop (i5 2.30ghz), with Dolle's model, 3 hours.</br>
+The third experiment of Pearce 1998 takes roughly 2 minutes to</br>lem or if you want to add something to the code
 
 ## License

@@ -70,6 +70,9 @@ A full simulation of Pearce 1998 experiment, with 100 agents implementing Geerts
 30 minutes to complete on a laptop (i5 2.30ghz), with Dolle's model, 2 hours.</br>
 A full simulation of Rodrigo 2006 experiment, with 100 agents implementing Geerts' model takes
 45 minutes to complete on a laptop (i5 2.30ghz), with Dolle's model, 3 hours.</br>
-The third experiment of Pearce 1998 takes roughly 2 minutes to</br>lem or if you want to add something to the code
+The third experiment of Pearce 1998 takes roughly 2 minutes to end with Geerts model, whereas it takes 8 minutes with Dolle's
+
+## Contributing
+Please contact thomas.misiek@etu.univ-amu.fr to report any problem or if you want to add something to the code
 
 ## License

@@ -24,7 +24,7 @@ Take note that the grid-search process require thousands of datapoints (we used 
 
 ## Installation
 
-Install the project by cloning it on your computer or by downloading a compressed version.
+Install the project by cloning it on your computer or by downloading a compressed version.</br>
 Install the required packages using the requirements.txt file and the 'pip install -r requirements.txt' command
 
 ## Usage

@@ -98,11 +98,14 @@ def get_best_action(agent, agent_pos):
     if str(type(agent)) != "<class 'agents.dolle_agent.DolleAgent'>" : # if coordination model is Dolle
         agent.env.current_state = agent_pos
         Q_combined, Q_mf, Q_allo, Q_sr = agent.compute_Q(agent_pos)
-        return np.argmax(Q_mf), np.argmax(Q_allo), np.argmax(Q_sr), np.argmax(Q_combined)
+        #return np.argmax(Q_mf), np.argmax(Q_allo), np.argmax(Q_sr), np.argmax(Q_combined)
+        return Q_mf, Q_allo, Q_sr, Q_combined
     else: # if coordination model is Geerts
         agent.env.current_state = agent_pos
         Q_combined, Q_mf, Q_allo, Q_sr, Q_arbi, decision_arbi = agent.compute_Q(agent_pos)
-        return np.argmax(Q_mf), np.argmax(Q_allo), np.argmax(Q_sr), np.argmax(Q_combined), decision_arbi
+        #return np.argmax(Q_mf), np.argmax(Q_allo), np.argmax(Q_sr), np.argmax(Q_combined), decision_arbi
+        return Q_mf, Q_allo, Q_sr, Q_combined, decision_arbi
+
 
 
 def get_mean_preferred_dirs(agents_lst, platform_idx=None, nb_trials=None):
@@ -127,6 +130,11 @@ def get_mean_preferred_dirs(agents_lst, platform_idx=None, nb_trials=None):
     preferred_actions_sr = []
     preferred_actions_combined = []
     preferred_actions_arbi = []
+    p_sr = []
+    prevaMF = []
+    prevaSR = []
+    varmf = []
+    varsr = []
 
     # create an action index to vectors dictionary
     actions_to_vectors = {}
@@ -138,7 +146,7 @@ def get_mean_preferred_dirs(agents_lst, platform_idx=None, nb_trials=None):
     if platform_idx is not None:
         for agent in agents_lst:
             agent.env.set_platform_state(platform_idx)
-            agent.env.delete_distal_landmark()
+            #agent.env.delete_distal_landmark()
             agent.env.set_proximal_landmark()
             for i in range(nb_trials):
                 agent.env.one_episode(agent, 500)
@@ -150,17 +158,35 @@ def get_mean_preferred_dirs(agents_lst, platform_idx=None, nb_trials=None):
         max_srs = []
         max_combineds = []
         mean_arbi = []
+        mean_p_sr = []
+        mean_prevaMF = []
+        mean_prevaSR = []
+        mean_varmf = []
+        mean_varsr = []
         # retrieve each agent strategies preferred action
         for agent in agents_lst:
             if str(type(agent)) != "<class 'agents.dolle_agent.DolleAgent'>" :
                 max_mf, max_allo, max_sr, max_combined = get_best_action(agent, agent_pos = pos)
+                mean_p_sr.append(agent.p_sr)
+                mean_varmf.append(np.array(max_mf).var())
+                mean_varsr.append(np.array(max_sr).var())
+                if np.array(max_allo).argmax() == np.array(max_combined).argmax():
+                    mean_prevaMF.append(1)
+                else:
+                    mean_prevaMF.append(0)
+
+                if np.array(max_sr).argmax() == np.array(max_combined).argmax():
+                    mean_prevaSR.append(1)
+                else:
+                    mean_prevaSR.append(0)
             else:
                 max_mf, max_allo, max_sr, max_combined, decision_arbi = get_best_action(agent, agent_pos = pos)
                 mean_arbi.append(decision_arbi)
-            max_mfs.append(max_mf)
-            max_allos.append(max_allo)
-            max_srs.append(max_sr)
-            max_combineds.append(max_combined)
+
+            max_mfs.append(np.array(max_mf).argmax())
+            max_allos.append(np.array(max_allo).argmax())
+            max_srs.append(np.array(max_sr).argmax())
+            max_combineds.append(np.array(max_combined).argmax())
 
         def most_common(lst): # return the most common element of lst
             return max(set(lst), key=lst.count)
@@ -172,6 +198,12 @@ def get_mean_preferred_dirs(agents_lst, platform_idx=None, nb_trials=None):
         preferred_actions_combined.append(most_common(max_combineds))
         if str(type(agent)) == "<class 'agents.dolle_agent.DolleAgent'>" :
             preferred_actions_arbi.append(np.array(mean_arbi).mean())
+        else:
+            p_sr.append(np.array(mean_p_sr).mean())
+            varmf.append(np.array(mean_varmf).mean())
+            varsr.append(np.array(mean_varsr).mean())
+            prevaMF.append(np.array(mean_prevaMF).mean())
+            prevaSR.append(np.array(mean_prevaSR).mean())
 
     # put the straight egocentric direction to the north for plotting purposes
     if not agents_lst[0].mf_allo:
@@ -185,7 +217,7 @@ def get_mean_preferred_dirs(agents_lst, platform_idx=None, nb_trials=None):
 
     # returns lists of 270 vectors (preferred orientation) for each strategy
     if str(type(agent)) != "<class 'agents.dolle_agent.DolleAgent'>" :
-        return preferred_vectors_mf, preferred_vectors_allo, preferred_vectors_sr, preferred_vectors_combined
+        return preferred_vectors_mf, preferred_vectors_allo, preferred_vectors_sr, preferred_vectors_combined, p_sr, prevaMF, prevaSR, varmf, varsr
     else:
         return preferred_vectors_mf, preferred_vectors_allo, preferred_vectors_sr, preferred_vectors_combined, preferred_actions_arbi
 
@@ -283,7 +315,8 @@ def plot_mean_arrows(agents_lst, prefvectors_mf, prefvectors_allo, prefvectors_s
         ax2.quiver(X, Y, U, V, units='xy' ,scale=1)
     ax2.grid()
     ax2.plot(platform_coord[0], platform_coord[1],'-or', label="platform (s"+str(platform_idx)+")")
-    ax2.plot(landmark_coord[0], landmark_coord[1],'-ob', label="landmark")
+    if landmark_coord is not None:
+        ax2.plot(landmark_coord[0], landmark_coord[1],'-ob', label="landmark")
     ax2.title.set_text('Mean preferred action for each state (allocentric mf)')
     ax2.legend()
     ax2.set_xlabel('x')
@@ -299,7 +332,8 @@ def plot_mean_arrows(agents_lst, prefvectors_mf, prefvectors_allo, prefvectors_s
         ax3.quiver(X, Y, U, V,units='xy' ,scale=1)
     ax3.grid()
     ax3.plot(platform_coord[0], platform_coord[1],'-or', label="platform (s"+str(platform_idx)+")")
-    ax3.plot(landmark_coord[0], landmark_coord[1],'-ob', label="landmark")
+    if landmark_coord is not None:
+        ax3.plot(landmark_coord[0], landmark_coord[1],'-ob', label="landmark")
     ax3.title.set_text('Mean preferred action for each state (goal directed)')
     ax3.legend()
     ax3.set_xlabel('x')
@@ -315,7 +349,8 @@ def plot_mean_arrows(agents_lst, prefvectors_mf, prefvectors_allo, prefvectors_s
         cbar.set_label('P(Goal-Directed)', rotation=270, labelpad=20)
     ax4.grid()
     ax4.plot(platform_coord[0], platform_coord[1],'-or', label="platform (s"+str(platform_idx)+")")
-    ax4.plot(landmark_coord[0], landmark_coord[1],'-ob', label="landmark")
+    if landmark_coord is not None:
+        ax4.plot(landmark_coord[0], landmark_coord[1],'-ob', label="landmark")
     if str(type(agents_lst[0])) == "<class 'agents.dolle_agent.DolleAgent'>" :
         ax4.title.set_text('Mean preferred action for each state (allo_mf and GD combined)')
     else:
@@ -371,7 +406,7 @@ def create_path(env_params, ag_params):
             raise Exception("inv_temp_mf is undefined")
         if ag_params.arbi_inv_temp is None:
             raise Exception("arbi_inv_temp is undefined")
-        path = os.path.join(str(env_params.n_agents)+str(ag_params.mf_allo)+str(ag_params.hpc_lr)+str(ag_params.q_lr)+str(ag_params.inv_temp_gd)+str(ag_params.inv_temp_mf)+str(ag_params.arbi_inv_temp)+str(ag_params.gamma)+str(ag_params.eta)+str(ag_params.alpha1)+str(ag_params.beta1)+str(ag_params.A_alpha)+str(ag_params.A_beta)+str(env_params.landmark_dist)+str(ag_params.HPCmode)+str(env_params.time_limit)+str(ag_params.lesion_HPC)+str(ag_params.lesion_DLS)+str(ag_params.dolle))
+        path = os.path.join(str(env_params.n_agents)+str(ag_params.mf_allo)+str(ag_params.hpc_lr)+str(ag_params.q_lr)+str(ag_params.inv_temp_gd)+str(ag_params.inv_temp_mf)+str(ag_params.arbi_inv_temp)+str(ag_params.gamma)+str(ag_params.arbi_learning_rate)+str(ag_params.alpha1)+str(ag_params.beta1)+str(ag_params.A_alpha)+str(ag_params.A_beta)+str(env_params.landmark_dist)+str(ag_params.HPCmode)+str(env_params.time_limit)+str(ag_params.lesion_HPC)+str(ag_params.lesion_DLS)+str(ag_params.dolle))
 
     else:
         if ag_params.inv_temp is None:
@@ -455,14 +490,18 @@ def get_MSLE(real, expected, relative):
 
     real_norm = []
     expected_norm = []
-    try:
+    try: # pearce data
         real_norm = minmax_scale(np.array(real).flatten(), feature_range=(50,100)).reshape((4,11))
         expected_norm = minmax_scale(np.array(expected).flatten(), feature_range=(50,100)).reshape((4,11))
         return min([sum([mean_squared_error([real_norm[cond]], [np.array(expected_norm[cond])/ratio]) for cond in range(len(real_norm))]) for ratio in ratios])
 
-    except:
-        real_norm = minmax_scale(np.array(real).flatten(), feature_range=(50,100)).reshape((2,5))
-        expected_norm = minmax_scale(np.array(expected).flatten(), feature_range=(50,100)).reshape((2,5))
+    except: # rodrigo data
+        if relative:
+            real_norm = minmax_scale(np.array(real).flatten(), feature_range=(50,100)).reshape((2,5))
+            expected_norm = minmax_scale(np.array(expected).flatten(), feature_range=(50,100)).reshape((2,5))
+        else:
+            real_norm = np.array(real).flatten().reshape(2,5)
+            expected_norm = np.array(expected).flatten().reshape(2,5)
         return min([sum([mean_squared_error([real_norm[cond]], [np.array(expected_norm[cond])/ratio]) for cond in range(len(real_norm))]) for ratio in ratios])*4.4
 
 

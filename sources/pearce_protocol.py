@@ -174,12 +174,43 @@ def plot_main_pearce_perfs(results_folder, n_trials, n_agents, n_sessions, show_
     figure_folder = os.path.join(results_folder, 'figs')
     df = create_df(results_folder, n_agents, grouped=True)
 
-    # perform two-way ANOVA (IV -> trial and session, DV -> escape time)
+    # 200 rows, 100*trial 1, 100*trial 4
+    df_anova_trial = df.reset_index()
+    df_anova_trial = df_anova_trial[np.logical_or(df_anova_trial["trial"]==0, df_anova_trial["trial"]==3)]
+    df_anova_trial = df_anova_trial.pivot_table(index=['agent', 'trial'], aggfunc='mean')
+    df_anova_trial = df_anova_trial[["escape time"]]
+
+    # 200 rows, 100*session 1, 100*session 4
+    df_anova_session = df.reset_index()
+    df_anova_session = df_anova_session[np.logical_or(df_anova_session["session"]==0, df_anova_session["session"]==10)]
+    df_anova_session = df_anova_session.pivot_table(index=['agent','session'], aggfunc='mean')
+    df_anova_session = df_anova_session[["escape time"]]
+
+    # perform ANOVA (IV -> trial, DV -> escape time)
     try:
-        df["escape_time"] = df["escape time"]
-        model = ols('escape_time ~ C(session) + C(trial) + C(session):C(trial)', data=df.reset_index()).fit()
+        df_anova_trial["escape_time"] = df_anova_trial["escape time"]
+        model = ols('escape_time ~ C(trial) + C(trial)', data=df_anova_trial.reset_index().sample(8)).fit()
         print()
-        print("Computing a two-way ANOVA on trial and session...")
+        print("Computing ANOVA on trial...")
+        print(sm.stats.anova_lm(model, typ=2))
+        print()
+        f = open(results_folder+"/anova_results.txt",'w')
+        print(sm.stats.anova_lm(model, typ=2), file=f)
+        print("\n(IV -> trial and session, DV -> escape time)", file=f)
+        f.close()
+    except:
+        print("Anova failed (there might not be enough data)")
+        print()
+        f = open(results_folder+"/anova_results.txt",'w')
+        print("Anova failed (there might not be enough data)", file=f)
+        f.close()
+
+    # perform ANOVA (IV -> session, DV -> escape time)
+    try:
+        df_anova_session["escape_time"] = df_anova_session["escape time"]
+        model = ols('escape_time ~  C(session) + C(session)', data=df_anova_session.reset_index().sample(8)).fit()
+        print()
+        print("Computing ANOVA on session...")
         print(sm.stats.anova_lm(model, typ=2))
         print()
         f = open(results_folder+"/anova_results.txt",'w')
@@ -264,7 +295,7 @@ def plot_main_pearce_quivs(results_folder, agents, show_plots, save_plots):
 
     # plot a first set of quivers, showing the heading-vectors after a 4 trials training
     if str(type(agents[0])) != "<class 'agents.dolle_agent.DolleAgent'>" :
-        hv_mf, hv_allo, hv_sr, hv_combined = get_mean_preferred_dirs(agents, platform_idx=18, nb_trials=4)
+        hv_mf, hv_allo, hv_sr, hv_combined, _, _, _, _, _ = get_mean_preferred_dirs(agents, platform_idx=18, nb_trials=4)
         ax1, ax2, ax3, ax4, fig = plot_mean_arrows(agents, hv_mf, hv_allo, hv_sr, hv_combined, nb_trials=4)
     else:
         hv_mf, hv_allo, hv_sr, hv_combined, decisions_arbi = get_mean_preferred_dirs(agents, platform_idx=18, nb_trials=4)
@@ -277,7 +308,7 @@ def plot_main_pearce_quivs(results_folder, agents, show_plots, save_plots):
 
     # plot a second set of quivers, showing the heading-vectors after a platform location shift (state 18 to 48) and no training
     if str(type(agents[0])) != "<class 'agents.dolle_agent.DolleAgent'>" :
-        hv_mf, hv_allo, hv_sr, hv_combined = get_mean_preferred_dirs(agents, platform_idx=48, nb_trials=0)
+        hv_mf, hv_allo, hv_sr, hv_combined,_,_,_,_,_ = get_mean_preferred_dirs(agents, platform_idx=48, nb_trials=0)
         ax1, ax2, ax3, ax4, fig = plot_mean_arrows(agents, hv_mf, hv_allo, hv_sr, hv_combined, nb_trials=0)
     else:
         hv_mf, hv_allo, hv_sr, hv_combined, decisions_arbi = get_mean_preferred_dirs(agents, platform_idx=48, nb_trials=0)
@@ -453,6 +484,62 @@ def plot_pearce(env_params, ag_params, ci=None, experimental_data=None, show_plo
         except:
             fig.savefig(os.path.join("../saved_results/"+directory, 'full_results.png'))
     plt.close()
+
+    # BELOW : print ANOVA analyses comparing groups performances at trials 1 and 4
+
+    # 200 rows, 100*trial 1, 100*trial 4
+    df_anova_trial1 = df.reset_index()
+    df_anova_trial1 = df_anova_trial1[df_anova_trial1["trial"]==0]
+    df_anova_trial1 = df_anova_trial1.pivot_table(index=['agent', 'trial'], aggfunc='mean')
+    df_anova_trial1 = df_anova_trial1[["escape time"]]
+
+    df_anova_trial4 = df.reset_index()
+    df_anova_trial4 = df_anova_trial4[df_anova_trial4["trial"]==3]
+    df_anova_trial4 = df_anova_trial4.pivot_table(index=['agent', 'trial'], aggfunc='mean')
+    df_anova_trial4 = df_anova_trial4[["escape time"]]
+
+    # 200 rows, 100*trial 1, 100*trial 4
+    df_anova_trial_lesion1 = df_lesion.reset_index()
+    df_anova_trial_lesion1 = df_anova_trial_lesion1[df_anova_trial_lesion1["trial"]==0]
+    df_anova_trial_lesion1 = df_anova_trial_lesion1.pivot_table(index=['agent', 'trial'], aggfunc='mean')
+    df_anova_trial_lesion1 = df_anova_trial_lesion1[["escape time"]]
+
+    df_anova_trial_lesion4 = df_lesion.reset_index()
+    df_anova_trial_lesion4 = df_anova_trial_lesion4[df_anova_trial_lesion4["trial"]==3]
+    df_anova_trial_lesion4 = df_anova_trial_lesion4.pivot_table(index=['agent', 'trial'], aggfunc='mean')
+    df_anova_trial_lesion4 = df_anova_trial_lesion4[["escape time"]]
+
+    df_anova_trial1["group"] = "normal"
+    df_anova_trial_lesion1["group"] = "lesioned"
+    df_anova_trial4["group"] = "normal"
+    df_anova_trial_lesion4["group"] = "lesioned"
+
+    df_both_1 = pd.concat([df_anova_trial1, df_anova_trial_lesion1])
+    df_both_4 = pd.concat([df_anova_trial4, df_anova_trial_lesion4])
+
+    # perform ANOVA (IV -> group, DV -> escape time)
+    try:
+        df_both_1["escape_time"] = df_both_1["escape time"]
+        model = ols('escape_time ~ C(group) + C(group)', data=df_both_1.reset_index()).fit()
+        print()
+        print("Computing ANOVA to test difference between trial 1 of group normal and group lesioned...")
+        print(sm.stats.anova_lm(model, typ=2))
+        print()
+    except:
+        print("Anova failed (there might not be enough data)")
+        print()
+
+    # perform ANOVA (IV -> group, DV -> escape time)
+    try:
+        df_both_4["escape_time"] = df_both_4["escape time"]
+        model = ols('escape_time ~ C(group) + C(group)', data=df_both_4.reset_index()).fit()
+        print()
+        print("Computing ANOVA to test difference between trial 4 of group normal and group lesioned...")
+        print(sm.stats.anova_lm(model, typ=2))
+        print()
+    except:
+        print("Anova failed (there might not be enough data)")
+        print()
 
 
 def determine_platform_seq(env, platform_states, n_sessions):

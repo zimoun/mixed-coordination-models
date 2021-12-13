@@ -1,7 +1,7 @@
 from agents.dolle_agent import DolleAgent
 from agents.fusion_agent import CombinedAgent
 from environments.HexWaterMaze import HexWaterMaze
-from utils import create_path, create_df, get_coords, isinoctant, save_params_in_txt
+from utils import create_path, create_df, get_coords, isinoctant, save_params_in_txt, charge_agents, get_mean_preferred_dirs, plot_mean_arrows, get_MSLE
 
 from IPython.display import clear_output
 from statsmodels.formula.api import ols
@@ -129,7 +129,8 @@ def perform_group_rodrigo(env_params, ag_params, show_plots=True, save_plots=Tru
 
             # FIRST STAGE
             # the platform is only chosen once at the beginning of session 1
-            platform_state = random.choice(possible_platforms)
+            #platform_state = random.choice(possible_platforms)
+            platform_state = 90
             envi.set_platform_state(platform_state)
             envi.set_proximal_landmark()
             envi.set_distal_landmark()
@@ -192,6 +193,9 @@ def perform_group_rodrigo(env_params, ag_params, show_plots=True, save_plots=Tru
                         res['angle'] = "extinction"
 
                     elif special_trial == trial and cond == "test":
+                        agent.lesion_hippocampus = True
+                        agent.learning = False
+                        agent.lesion_PFC = True
                         envi.delete_plaform()
                         envi.set_angle_proximal_beacon(angles[ses]) # rotate the proximal landmark
                         res = envi.one_episode(agent, env_params.time_limit/2)
@@ -202,6 +206,9 @@ def perform_group_rodrigo(env_params, ag_params, show_plots=True, save_plots=Tru
                         res["cond"] = "test"
                         res['angle'] = angles[ses]
                         # put platform and proximal landmark at normal again
+                        agent.lesion_hippocampus = False
+                        agent.learning = True
+                        agent.lesion_PFC = False
                         envi.set_platform_state(platform_state)
                         envi.set_proximal_landmark()
 
@@ -242,12 +249,15 @@ def perform_group_rodrigo(env_params, ag_params, show_plots=True, save_plots=Tru
         # plot a histogram of the mean occupancy of distal landmark octant and proximal landmark octant for each angle condition
         if show_plots or save_plots:
             plot_rodrigo(results_folder, env_params.n_agents, show_plots, save_plots)
+            plot_rodrigo_quivs(saved_results_folder, agents, show_plots, save_plots=False)
 
     # if an identical simulation has already been saved
     else:
         # plot a histogram of the mean occupancy of distal landmark octant and proximal landmark octant for each angle condition
         if show_plots or save_plots:
             plot_rodrigo(saved_results_folder, env_params.n_agents, show_plots, save_plots)
+            agents = charge_agents(saved_results_folder+"/agents.p")
+            plot_rodrigo_quivs(saved_results_folder, agents, show_plots, save_plots=False)
 
     # delete all agents, to prevent memory error
     if 'agents' in locals():
@@ -279,12 +289,37 @@ def run_statistical_tests_rodrigo(path, n_agents, show_plots):
         print("Concatenating all data")
         df_analysis = pd.concat(agents_df_lst)
 
+
         print("Computing proximal and distal octants mean proportion of occupation on test episodes")
         dist0 = get_mean_occupation_octant(0, df_analysis, coords)
         dist45 = get_mean_occupation_octant(45, df_analysis, coords)
         dist90 = get_mean_occupation_octant(90, df_analysis, coords)
         dist135 = get_mean_occupation_octant(135, df_analysis, coords)
         dist180 = get_mean_occupation_octant(180, df_analysis, coords)
+
+        # dat=pd.concat([dist0, dist45], ignore_index=False)
+        # model = ols('isinoctant_proximal ~ C(angle)', data=dat).fit()
+        # print(sm.stats.anova_lm(model, typ=2))
+        # dat=pd.concat([dist45, dist90], ignore_index=False)
+        # model = ols('isinoctant_proximal ~ C(angle)', data=dat).fit()
+        # print(sm.stats.anova_lm(model, typ=2))
+        # dat=pd.concat([dist90, dist135], ignore_index=False)
+        # model = ols('isinoctant_proximal ~ C(angle)', data=dat).fit()
+        # print(sm.stats.anova_lm(model, typ=2))
+        # dat=pd.concat([dist135, dist180], ignore_index=False)
+        # model = ols('isinoctant_proximal ~ C(angle)', data=dat).fit()
+        # print(sm.stats.anova_lm(model, typ=2))
+
+        # print("Kruskal 0 vs 45, proximal: ", stats.kruskal(dist0[50:100]["isinoctant_proximal"], dist45[50:100]["isinoctant_proximal"]))
+        # print("Kruskal 45 vs 90, proximal: ", stats.kruskal(dist45[50:100]["isinoctant_proximal"], dist90[50:100]["isinoctant_proximal"]))
+        # print("Kruskal 90 vs 135, proximal: ", stats.kruskal(dist90[50:100]["isinoctant_proximal"], dist135[50:100]["isinoctant_proximal"]))
+        # print("Kruskal 135 vs 180, proximal: ", stats.kruskal(dist135[50:100]["isinoctant_proximal"], dist180[50:100]["isinoctant_proximal"]))
+        #
+        # print("Kruskal 0 vs 45, distal: ", stats.kruskal(dist0["isinoctant_distal"], dist45["isinoctant_distal"]))
+        # print("Kruskal 45 vs 90, distal: ", stats.kruskal(dist45["isinoctant_distal"], dist90["isinoctant_distal"]))
+        # print("Kruskal 90 vs 135, distal: ", stats.kruskal(dist90["isinoctant_distal"], dist135["isinoctant_distal"]))
+        # print("Kruskal 135 vs 180, distal: ", stats.kruskal(dist135["isinoctant_distal"], dist180["isinoctant_distal"]))
+
 
         octant_occup_df = pd.concat([dist0, dist45, dist90, dist135, dist180], ignore_index=False)
 
@@ -300,10 +335,8 @@ def run_statistical_tests_rodrigo(path, n_agents, show_plots):
         p = 0.05
 
         print("Performing statistical analyses")
-
         cluster_df = octant_occup_df
         cluster_df = cluster_df.reset_index()
-
         # HELMERT TESTS
         helmert_p = lambda lst : ols("isinoctant_proximal ~ C(angle, Helmert)", data=cluster_df[cluster_df["angle"].isin(lst)]).fit()
         helmert_rodrigo_0vs_results_p.append(helmert_p([0,45,90,135,180]).f_pvalue < p)
@@ -317,9 +350,9 @@ def run_statistical_tests_rodrigo(path, n_agents, show_plots):
         helmert_rodrigo_90vs_results_d.append(helmert_d([90,135,180]).f_pvalue < p)
 
         # ANOVA
-        model = ols('isinoctant_proximal ~ C(angle) + C(angle) + C(angle):C(angle)', data=cluster_df).fit()
+        model = ols('isinoctant_proximal ~ C(angle)', data=cluster_df).fit()
         tmp = sm.stats.anova_lm(model, typ=2)
-        model2 = ols('isinoctant_distal ~ C(angle) + C(angle) + C(angle):C(angle)', data=cluster_df).fit()
+        model2 = ols('isinoctant_distal ~ C(angle)', data=cluster_df).fit()
         tmp2 = sm.stats.anova_lm(model2, typ=2)
         anova_rodrigo_results.append(tmp["PR(>F)"]["C(angle)"]<p and tmp2["PR(>F)"]["C(angle)"]<p)
 
@@ -333,16 +366,16 @@ def run_statistical_tests_rodrigo(path, n_agents, show_plots):
             print("Performing statistical analyses...")
             print()
             print("Helmert tests")
-            print("p < 0.05 on 0° versus others (proximal beacon): ", helmert_p([0,45,90,135,180]).f_pvalue < p)
-            print("p < 0.05 on 45° versus others (proximal beacon): ",helmert_p([45,90,135,180]).f_pvalue < p)
-            print("p < 0.05 on 90° versus others (proximal beacon): ",helmert_p([90,135,180]).f_pvalue < p)
-            print("p < 0.05 on 0° versus others (distal beacon): ",helmert_d([0,45,90,135,180]).f_pvalue < p)
-            print("p < 0.05 on 45° versus others (distal beacon): ",helmert_d([45,90,135,180]).f_pvalue < p)
-            print("p < 0.05 on 90° versus others (distal beacon): ",helmert_d([90,135,180]).f_pvalue < p)
+            print("p < 0.05 on 0° versus others (proximal beacon): ", helmert_p([0,45,90,135,180]).f_pvalue < p, ", F: ", helmert_p([0,45,90,135,180]).fvalue)
+            print("p < 0.05 on 45° versus others (proximal beacon): ",helmert_p([45,90,135,180]).f_pvalue < p, ", F: ", helmert_p([45,90,135,180]).fvalue)
+            print("p < 0.05 on 90° versus others (proximal beacon): ",helmert_p([90,135,180]).f_pvalue < p, ", F: ", helmert_p([90,135,180]).fvalue)
+            print("p < 0.05 on 0° versus others (distal beacon): ",helmert_d([0,45,90,135,180]).f_pvalue < p, ", F: ", helmert_d([0,45,90,135,180]).fvalue)
+            print("p < 0.05 on 45° versus others (distal beacon): ",helmert_d([45,90,135,180]).f_pvalue < p, ", F: ", helmert_d([45,90,135,180]).fvalue)
+            print("p < 0.05 on 90° versus others (distal beacon): ",helmert_d([90,135,180]).f_pvalue < p, ", F: ", helmert_d([90,135,180]).fvalue)
             print()
             print("ANOVAS")
-            print("Effect of angle on proximal beacon's octant occupation: ",tmp["PR(>F)"]["C(angle)"]<p)
-            print("Effect of angle on distal beacon's octant occupation: ",tmp2["PR(>F)"]["C(angle)"]<p)
+            print("Effect of angle on proximal beacon's octant occupation: ",tmp["PR(>F)"]["C(angle)"]<p, ", F: ", tmp["F"]["C(angle)"])
+            print("Effect of angle on distal beacon's octant occupation: ",tmp2["PR(>F)"]["C(angle)"]<p, ", F: ", tmp2["F"]["C(angle)"])
             print()
             print("TTESTS")
             print("Proximal beacon's octant occupation different from chance: at 0° condition: ", ttest(0) < p)
@@ -431,6 +464,20 @@ def plot_rodrigo(results_folder, n_agents, show_plots, save_plots):
     axs[1,1].set_ylabel("Proportion of time searching in the distal landmark octant")
     axs[1,1].set_xlabel("Tests")
 
+
+    proximal = [0.28, 0.22, 0.18, 0.13, 0.16]
+    distal = [0.28, 0.11, 0.025, 0., 0.]
+    experimental_data_rodrigo = {"dist":distal, "prox":proximal}
+    real_data = experimental_data_rodrigo["dist"] + experimental_data_rodrigo["prox"]
+
+    # get mean occupation of octants of a cluster of 100 simulated rats for both beacon conditions
+
+    simu_data = [dist0, dist45, dist90, dist135, dist180, prox0, prox45, prox90, prox135, prox180]
+    se_rodrigo = get_MSLE([real_data], [simu_data], relative=True)
+    print("relative MSE: ", se_rodrigo)
+    se_rodrigo = get_MSLE([real_data], [simu_data], relative=False)
+    print("absolute MSE: ", se_rodrigo)
+
     if show_plots:
         plt.show()
     if save_plots:
@@ -439,6 +486,123 @@ def plot_rodrigo(results_folder, n_agents, show_plots, save_plots):
     plt.close()
 
     run_statistical_tests_rodrigo(results_folder, n_agents, show_plots)
+
+def plot_rodrigo_quivs(results_folder, agents, show_plots, save_plots):
+    """
+    Plot eight quivers of the heading vectors of the navigation strategies of a group of agents.
+    Each quiver display 270 arrows showing the preferred direction of a given strategy at each state of the maze
+    Plot a first set of quivers with platform at state 18 and 4 trials of additional training:
+    One quiver for egocentric MF strategy
+    One quiver for allocentric MF strategy
+    One quiver for goal-directed strategy
+    One quiver for the coordination model strategy
+    Then a second set of four quivers with platform at state 48 and no additional training.
+    This is to see the effect of training and previous platform state on heading-vectors
+
+    :param results_folder: path of the results folder
+    :type results_folder: str
+    :param agents: all the agents that were created to produce data stored in results_folder
+    :type agents: Agent list
+    :param show_plots: whether to display any created plot
+    :type show_plot: boolean
+    :param save_plots: whether to save any created plots in the results folder
+    :type save_plots: boolean
+    """
+
+    print("Computing the heading-vectors of each strategy...")
+    print()
+
+    figure_folder = os.path.join(results_folder, 'figs')
+
+    for agent in agents:
+        agent.env.set_platform_state(90)
+        res = agent.env.one_episode(agent, 500)
+        res = agent.env.one_episode(agent, 500)
+        res = agent.env.one_episode(agent, 500)
+        res = agent.env.one_episode(agent, 500)
+        res = agent.env.one_episode(agent, 500)
+        res = agent.env.one_episode(agent, 500)
+        res = agent.env.one_episode(agent, 500)
+
+        agent.env.set_proximal_landmark()
+        agent.env.set_angle_proximal_beacon(135)
+
+
+    # plot a first set of quivers, showing the heading-vectors after a 4 trials training
+    if str(type(agents[0])) != "<class 'agents.dolle_agent.DolleAgent'>" :
+        hv_mf, hv_allo, hv_sr, hv_combined,_,_,_,_,_ = get_mean_preferred_dirs(agents)
+        ax1, ax2, ax3, ax4, fig = plot_mean_arrows(agents, hv_mf, hv_allo, hv_sr, hv_combined)
+    else:
+        hv_mf, hv_allo, hv_sr, hv_combined, decisions_arbi = get_mean_preferred_dirs(agents)
+        ax1, ax2, ax3, ax4, fig = plot_mean_arrows(agents, hv_mf, hv_allo, hv_sr, hv_combined,decisions_arbi=decisions_arbi)
+    fig.suptitle("Mean strategies after initial training, at the beginning of the test trial", fontsize=14)
+    if save_plots:
+        plt.savefig(os.path.join(figure_folder, 'mean_heading_vectors_4trainingtrials.png'))
+    if show_plots:
+        plt.show()
+    plt.close()
+
+    for agent in agents:
+
+        agent.env.set_proximal_landmark()
+        agent.env.delete_proximal_landmark()
+
+    # plot a second set of quivers, showing the heading-vectors after a platform location shift (state 18 to 48) and no training
+    if str(type(agents[0])) != "<class 'agents.dolle_agent.DolleAgent'>" :
+        hv_mf, hv_allo, hv_sr, hv_combined,_,_,_,_,_ = get_mean_preferred_dirs(agents)
+        ax1, ax2, ax3, ax4, fig = plot_mean_arrows(agents, hv_mf, hv_allo, hv_sr, hv_combined)
+    else:
+        hv_mf, hv_allo, hv_sr, hv_combined, decisions_arbi = get_mean_preferred_dirs(agents)
+        ax1, ax2, ax3, ax4, fig = plot_mean_arrows(agents, hv_mf, hv_allo, hv_sr, hv_combined, decisions_arbi=decisions_arbi)
+    fig.suptitle("Mean strategies after initial training, at the beginning of the test trial", fontsize=14)
+    if save_plots:
+        plt.savefig(os.path.join(figure_folder, 'mean_heading_vectors_0trainingtrials.png'))
+    if show_plots:
+        plt.show()
+    plt.close()
+
+
+    for agent in agents:
+        agent.env.set_proximal_landmark()
+        agent.env.set_angle_proximal_beacon(135) # rotate the proximal landmark
+        agent.env.delete_plaform()
+        res = agent.env.one_episode(agent, 250)
+        agent.env.set_platform_state(90)
+        agent.env.set_proximal_landmark()
+        agent.env.set_angle_proximal_beacon(135)
+    # plot a first set of quivers, showing the heading-vectors after a 4 trials training
+    if str(type(agents[0])) != "<class 'agents.dolle_agent.DolleAgent'>" :
+        hv_mf, hv_allo, hv_sr, hv_combined,_,_,_,_,_ = get_mean_preferred_dirs(agents)
+        ax1, ax2, ax3, ax4, fig = plot_mean_arrows(agents, hv_mf, hv_allo, hv_sr, hv_combined)
+    else:
+        hv_mf, hv_allo, hv_sr, hv_combined, decisions_arbi = get_mean_preferred_dirs(agents)
+        ax1, ax2, ax3, ax4, fig = plot_mean_arrows(agents, hv_mf, hv_allo, hv_sr, hv_combined,decisions_arbi=decisions_arbi)
+    fig.suptitle("Mean strategies after initial training, at the end of the test trial", fontsize=14)
+    if save_plots:
+        plt.savefig(os.path.join(figure_folder, 'mean_heading_vectors_4trainingtrials.png'))
+    if show_plots:
+        plt.show()
+    plt.close()
+
+    for agent in agents:
+
+        agent.env.set_proximal_landmark()
+        agent.env.delete_proximal_landmark()
+
+
+    # plot a second set of quivers, showing the heading-vectors after a platform location shift (state 18 to 48) and no training
+    if str(type(agents[0])) != "<class 'agents.dolle_agent.DolleAgent'>" :
+        hv_mf, hv_allo, hv_sr, hv_combined,_,_,_,_,_ = get_mean_preferred_dirs(agents)
+        ax1, ax2, ax3, ax4, fig = plot_mean_arrows(agents, hv_mf, hv_allo, hv_sr, hv_combined)
+    else:
+        hv_mf, hv_allo, hv_sr, hv_combined, decisions_arbi = get_mean_preferred_dirs(agents)
+        ax1, ax2, ax3, ax4, fig = plot_mean_arrows(agents, hv_mf, hv_allo, hv_sr, hv_combined, decisions_arbi=decisions_arbi)
+    fig.suptitle("Mean strategies after initial training, at the end of the test trial", fontsize=14)
+    if save_plots:
+        plt.savefig(os.path.join(figure_folder, 'mean_heading_vectors_0trainingtrials.png'))
+    if show_plots:
+        plt.show()
+    plt.close()
 
 
 def get_mean_occupation_octant(angle, df_analysis, coords):
@@ -457,7 +621,10 @@ def get_mean_occupation_octant(angle, df_analysis, coords):
     df = df_analysis[np.logical_or(df_analysis["angle"]==str(angle), df_analysis["angle"]==str(-angle))]
     df['angle'] = angle
     df['isinoctant_distal'] = df.apply(lambda row: isinoctant(coords[row.state], [float(row.distal_posx), float(row.distal_posy)]), axis=1)
-    df['isinoctant_proximal'] = df.apply(lambda row: isinoctant(coords[row.state], [float(row.proximal_posx), float(row.proximal_posy)]), axis=1)
+    try:
+        df['isinoctant_proximal'] = df.apply(lambda row: isinoctant(coords[row.state], [float(row.proximal_posx), float(row.proximal_posy)]), axis=1)
+    except: # for previous version
+        df['isinoctant_proximal'] = df.apply(lambda row: isinoctant(coords[row.state], [float(row.beacon_posx), float(row.beacon_posy)]), axis=1)
     df_res = df.groupby("agent").mean()
     df_res['isinoctant_distal'] = df_res['isinoctant_distal'].replace(np.inf, 0)
     df_res['isinoctant_proximal'] = df_res['isinoctant_proximal'].replace(np.inf, 0)

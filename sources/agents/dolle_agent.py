@@ -1,3 +1,4 @@
+import math
 import random
 import numpy as np
 import pandas as pd
@@ -28,41 +29,15 @@ class DolleAgent(Agent, AssociativeAgent):
 
     :param env: the environment
     :type env: Environment
-    :param gamma: discount factor of value propagation
-    :type gamma: float
-    :param q_lr: learning rate of the DLS model
-    :type q_lr: float
-    :param sr_lr: learning rate of the HPC model (SR or MB)
-    :type sr_lr: float
-    :param arbi_inv_temp: arbitrator's inverse temperature for softmax explorative behavior
-    :type arbi_inv_temp: int
-    :param inv_temp_mf: DLS model's inverse temperature for softmax explorative behavior
-    :type inv_temp_mf: int
-    :param inv_temp_gd: HPC model's inverse temperature for softmax explorative behavior
-    :type inv_temp_gd: int
-    :param arbi_learning_rate: learning_rate of the arbitrator
-    :type arbi_learning_rate: float
+    :param ag_params: Contains all the parameters to set the different RL modules of the agent (see AgentsParams for details)
+    :type ag_params: AgentsParams
     :param init_sr: how the SR weights must be initialized (either "zero", "rw", "identity" or "opt")
     :type init_sr: str
-    :param HPCmode: to choose the model of the HPC,either "SR" or "MB"
-    :type HPCmode: str
-    :param mf_allo: whether the DLS module is in the allocentric or egocentric frame of reference
-    :type mf_allo: boolean
-    :param lesion_dls: Whether the DLS module is inactivated or not (full control of HPC if True)
-    :type lesion_dls: boolean
-    :param lesion_hpc: Whether the HPC module is inactivated or not (full control of DLS if True)
-    :type lesion_hpc: boolean
-    :param lesion_PFC: Arbitrator will always select the DLS strategy if True. If False the arbitrator will still
-                       need to select between HPC and DLS strategies when the HPC is lesioned (HPC Q-values all set to 0).
-    :type lesion_PFC: boolean
     """
 
     pc_pop_activity = {} # associate each state of the maze to place-cells population activity
 
     def __init__(self, env, ag_params, init_sr=None):
-
-        # if init_sr != 'zero' and init_sr != 'rw' and init_sr != 'identity' and init_sr != 'opt':
-        #     raise Exception("init_sr should be set to either 'zero', 'rw', 'identity' or 'opt'")
 
         super().__init__(env=env, gamma=ag_params.gamma, learning_rate=ag_params.arbi_learning_rate, inv_temp=ag_params.arbi_inv_temp)
 
@@ -72,6 +47,8 @@ class DolleAgent(Agent, AssociativeAgent):
 
         self.HPCmode = ag_params.HPCmode
         self.mf_allo = ag_params.mf_allo
+
+        self.learning=True
 
         self.lesion_striatum = ag_params.lesion_DLS
         self.lesion_hippocampus = ag_params.lesion_HPC
@@ -88,7 +65,8 @@ class DolleAgent(Agent, AssociativeAgent):
 
         self.DLS = LandmarkLearningAgent(self.env, gamma=ag_params.gamma, learning_rate=ag_params.q_lr,
                                         inv_temp=ag_params.inv_temp_mf, eta=None, allo=ag_params.mf_allo)
-        self.weights = np.zeros((240, 2)) # 80 proximal landmark neurons + 80 distal landmark neurons + 80 place-cells
+        #self.weights = np.zeros((240, 2)) # 80 proximal landmark neurons + 80 distal landmark neurons + 80 place-cells
+        self.weights = np.array([[0., 0.0]]*240) # Early preference of the coordination model for the MB. Set to 0. for the no intrinsic cost of MB mode
         self.last_observation = np.zeros(240) # 80 proximal landmark neurons + 80 distal landmark neurons + 80 place-cells
         self.last_decision_arbi = 0
 
@@ -109,7 +87,50 @@ class DolleAgent(Agent, AssociativeAgent):
                   'arbitrator_choice': [1],
                   'previous_platform': [self.env.previous_platform_state],
                   'platform': [self.env.get_goal_state()],
+                  'rew_func_sum': [self.HPC.R_hat.sum()],
+                  'syn_prox_mean': [self.DLS.weights[0:80].mean()],
+                  'syn_dist_mean': [self.DLS.weights[80:160].mean()],
+                  'syn_prox_mean_arbi': [self.weights[0:80].mean()],
+                  'syn_dist_mean_arbi': [self.weights[80:160].mean()],
+                  'syn_pc_arbi': [self.weights[160:240].mean()],
+
                   }
+
+    def blur_state(self, s):
+
+        dim1 = np.array([*range(-10,12,2)])
+        dim2 = np.array([*range(-10,12,2)])
+        sdim1 = self.env.grid.cart_coords[s][0]
+        sdim2 = self.env.grid.cart_coords[s][1]
+        closest1 = dim1[np.abs(dim1 - sdim1).argmin()]
+        closest2 = dim2[np.abs(dim2 - sdim2).argmin()]
+
+        def calculateDistance(p1,p2):
+            x1 = p1[0]
+            y1 = p1[1]
+            x2 = p2[0]
+            y2 = p2[1]
+            dist = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+            return dist
+
+        lowest = 100
+        idlowest = -1
+        for i in range(0,271):
+
+            p2 = self.env.grid.cart_coords[i]
+            dist = calculateDistance((closest1,closest2),p2)
+            if lowest > dist:
+                lowest = dist
+                idlowest = i
+
+        # neighbors = [self.env.get_next_state_and_reward(s,a)[0] for a in range(6)]
+        # res = []
+        # for n in neighbors:
+        #     res += [self.env.get_next_state_and_reward(n,a)[0] for a in range(6)]
+        # res = list(set(res))
+        # neighbors.append(s)
+        # s2 = random.choice(res)
+        return idlowest
 
     def save(self, t, s):
         """
@@ -124,6 +145,12 @@ class DolleAgent(Agent, AssociativeAgent):
         self.results['arbitrator_choice'].append(self.last_decision_arbi)
         self.results['previous_platform'].append(self.env.previous_platform_state)
         self.results['platform'].append(self.env.get_goal_state())
+        self.results['rew_func_sum'].append(self.HPC.R_hat.sum())
+        self.results['syn_prox_mean'].append(self.DLS.weights[0:80].mean())
+        self.results['syn_dist_mean'].append(self.DLS.weights[80:160].mean())
+        self.results['syn_prox_mean_arbi'].append(self.weights[0:80].mean())
+        self.results['syn_dist_mean_arbi'].append(self.weights[80:160].mean())
+        self.results['syn_pc_arbi'].append(self.weights[160:240].mean())
 
     def take_decision(self, s, orientation):
         """
@@ -164,6 +191,7 @@ class DolleAgent(Agent, AssociativeAgent):
 
 
     def update(self, previous_state, reward, s, allo_a, ego_a, orientation):
+
         """
         Triggers the update of the DLS and HPC models. (associative weights, reward function, transition function...)
         Updates the weights of the associative-learning agent in charge of selecting which navigation expert can drive behavior
@@ -182,20 +210,31 @@ class DolleAgent(Agent, AssociativeAgent):
         :param orientation: the current orientation of the agent
         :type orientation: int
         """
-        decision_arbi = self.last_decision_arbi
+        if self.learning:
+            decision_arbi = self.last_decision_arbi
+            if not self.lesion_striatum:
+                self.DLS.update(previous_state, reward, s, allo_a, ego_a, orientation)
+            if not self.lesion_hippocampus:
+                s2 = self.blur_state(s)
+                s3 = self.blur_state(previous_state)
+                #s2 = s
+                #s3 = previous_state
 
-        self.DLS.update(previous_state, reward, s, allo_a, ego_a, orientation)
-        if not self.lesion_hippocampus:
-            self.HPC.update(previous_state, reward, s, allo_a, ego_a, orientation)
+                if self.HPCmode == "SR" or decision_arbi == 1:
+                    self.HPC.update(s3, reward, s2, allo_a, ego_a, orientation)
+                else:
+                    # set replay to True for the no intrinsic cost of MB mode
+                    self.HPC.update(s3, reward, s2, allo_a, ego_a, orientation, replay=True)
 
-        features_arb = self.get_feature_rep(s) # place-cells + visual signal
+            features_arb = self.get_feature_rep(s) # place-cells + visual signal
 
-        Qa = self.weights.T @ self.last_observation
-        RPEa = self.compute_error(Qa, decision_arbi, features_arb, s, reward)
-        self.update_weights(RPEa, decision_arbi, self.last_observation)
-        self.last_observation = features_arb
+            Qa = self.weights.T @ self.last_observation
+            RPEa = self.compute_error(Qa, decision_arbi, features_arb, s, reward)
+            self.update_weights(RPEa, decision_arbi, self.last_observation)
+            self.last_observation = features_arb
 
-        return RPEa
+            return RPEa
+
 
     def get_feature_rep(self, state=None):
         """
@@ -267,11 +306,18 @@ class DolleAgent(Agent, AssociativeAgent):
         if self.lesion_hippocampus:
             Q_sr = np.array([0.,0.,0.,0.,0.,0.])
         else:
-            Q_sr = self.HPC.compute_Q(state_idx)
+            s2 = self.blur_state(state_idx)
+            #s2 = state_idx
+            Q_sr = self.HPC.compute_Q(s2)
 
         # compute DLS Q
-        visual_rep = self.DLS.get_feature_rep(state_idx)
-        Q_ego = self.DLS.compute_Q(visual_rep)
+
+        if self.lesion_striatum:
+            visual_rep = np.zeros(160)
+            Q_ego = np.array([0.,0.,0.,0.,0.,0.])
+        else:
+            visual_rep = self.DLS.get_feature_rep(state_idx)
+            Q_ego = self.DLS.compute_Q(visual_rep)
         Q_allo = self.DLS.compute_Q_allo(Q_ego)
 
         # Select navigation expert
@@ -313,6 +359,9 @@ class DolleAgent(Agent, AssociativeAgent):
 
         :returns type: float
         """
+
+        if a == 1:
+            reward = reward - (0.) # set to 0. for the no intrinsic cost of MB mode
 
         next_Q = self.weights.T @ next_f
         if self.env.is_terminal(next_state):

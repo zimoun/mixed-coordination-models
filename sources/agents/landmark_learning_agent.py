@@ -117,6 +117,7 @@ class LandmarkLearningAgent(Agent, AssociativeAgent, FirstOrderAgent):
         proximal_rep = self.get_single_feature_rep(state, orientation, self.env.proximal_landmark_location) # 80 neurons activity
         distal_rep = self.get_single_feature_rep(state, orientation, self.env.distal_landmark_location) # # 80 neurons activity
         visual_rep = np.concatenate((proximal_rep, distal_rep), axis=None)
+
         return visual_rep
 
     def get_single_feature_rep(self, state, orientation, landmark_location):

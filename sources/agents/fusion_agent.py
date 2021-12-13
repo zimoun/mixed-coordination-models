@@ -22,40 +22,14 @@ class CombinedAgent(Agent):
 
     :param env: the environment
     :type env: Environment
-    :param gamma: discount factor of value propagation
-    :type gamma: float
-    :param q_lr: learning rate of the DLS model
-    :type q_lr: float
-    :param sr_lr: learning rate of the HPC model (SR or MB)
-    :type sr_lr: float
-    :param inv_temp: softmax exploration's inverse temperature
-    :type inv_temp: int
-    :param eta: used to update the HPC and DLS models' reliability
-    :type eta: float
-    :param A_alpha: steepness of transition curve MF to SR
-    :type A_alpha: float
-    :param A_beta: steepness of transition curve SR to MF
-    :type A_beta: float
-    :param alpha1: used to compute the transition rate from MF to SR
-    :type alpha1: float
-    :param beta1: used to compute the transition rate from SR to MF
-    :type beta1: float
+    :param ag_params: Contains all the parameters to set the different RL modules of the agent (see AgentsParams for details)
+    :type ag_params: AgentsParams
     :param init_sr: how the SR weights must be initialized (either "zero", "rw", "identity" or "opt")
     :type init_sr: str
-    :param HPCmode: to choose the model of the HPC, either "SR" or "MB"
-    :type HPCmode: str
-    :param mf_allo: whether the DLS module is in the allocentric or egocentric frame of reference
-    :type mf_allo: boolean
-    :param lesion_dls: Whether the DLS module is inactivated or not (full control of HPC if True)
-    :type lesion_dls: boolean
-    :param lesion_hpc: Whether the HPC module is inactivated or not (full control of DLS if True)
-    :type lesion_hpc: boolean
+
     """
 
     def __init__(self, env, ag_params, init_sr=None):
-
-        # if init_sr != 'zero' and init_sr != 'rw' and init_sr != 'identity' and init_sr != 'opt':
-        #     raise Exception("init_sr should be set to either 'zero', 'rw', 'identity or 'opt'")
 
         super().__init__(env=env, gamma=ag_params.gamma, learning_rate=None, inv_temp=ag_params.inv_temp)
 
@@ -66,6 +40,11 @@ class CombinedAgent(Agent):
 
         self.HPCmode = ag_params.HPCmode
         self.mf_allo = ag_params.mf_allo
+
+        self.Qprox = np.zeros(6)
+        self.Qdist = np.zeros(6)
+
+        self.learning = True # deactivate any model update if False
 
         self.lesion_striatum = ag_params.lesion_DLS
         self.lesion_hippocampus = ag_params.lesion_HPC
@@ -86,7 +65,8 @@ class CombinedAgent(Agent):
         self.p_sr = .9 # comprised between 0 and 1
 
     def setup(self): # is called at the beginning of each episode
-        self.update_p_sr()
+        if self.learning:
+            self.update_p_sr()
 
     def init_saving(self, t, s):
         """
@@ -102,6 +82,56 @@ class CombinedAgent(Agent):
                   'P(SR)': [self.p_sr],
                   'previous_platform': [self.env.previous_platform_state],
                   'platform': [self.env.get_goal_state()],
+                  'rew_func_sum': [self.HPC.R_hat.sum()],
+
+                  #"synaptic_w_mf": [self.weights.mean()],
+                  "Q_max": [0.],
+                  "Qsr_max": [0.],
+                  "Qcombmf": [0.],
+                  "Qcombsr": [0.],
+                  "Qcombdist": [0.],
+                  "Qcombprox": [0.],
+
+                  "Qsr0": [0.],
+                  "Qsr1": [0.],
+                  "Qsr2": [0.],
+                  "Qsr3": [0.],
+                  "Qsr4": [0.],
+                  "Qsr5": [0.],
+
+                  "Qprox0": [0.],
+                  "Qprox1": [0.],
+                  "Qprox2": [0.],
+                  "Qprox3": [0.],
+                  "Qprox4": [0.],
+                  "Qprox5": [0.],
+
+                  "Qdist0": [0.],
+                  "Qdist1": [0.],
+                  "Qdist2": [0.],
+                  "Qdist3": [0.],
+                  "Qdist4": [0.],
+                  "Qdist5": [0.],
+
+                  "Qmf0": [0.],
+                  "Qmf1": [0.],
+                  "Qmf2": [0.],
+                  "Qmf3": [0.],
+                  "Qmf4": [0.],
+                  "Qmf5": [0.],
+
+                  "Qcomb0": [0.],
+                  "Qcomb1": [0.],
+                  "Qcomb2": [0.],
+                  "Qcomb3": [0.],
+                  "Qcomb4": [0.],
+                  "Qcomb5": [0.],
+
+                  'syn_prox_mean': [self.DLS.weights[0:80].mean()],
+                  'syn_dist_mean': [self.DLS.weights[80:160].mean()],
+
+                  #"f_mean": [f.mean()],
+                  #'state': [s],
                   }
 
     def save(self, t, s):
@@ -118,6 +148,77 @@ class CombinedAgent(Agent):
         self.results['previous_platform'].append(self.env.previous_platform_state)
         self.results['platform'].append(self.env.get_goal_state())
 
+
+
+    def save_internal(self, Q_allo, Q_sr, Q_combined):
+
+        #self.results["synaptic_w_mf"].append(self.weights.mean())
+        self.results["Q_max"].append(Q_allo.max())
+        #self.results["f_mean"].append(f.mean()),
+        self.results["Qsr_max"].append(np.array(Q_sr).max())
+
+        self.results["Qsr0"].append(Q_sr[0])
+        self.results["Qsr1"].append(Q_sr[1])
+        self.results["Qsr2"].append(Q_sr[2])
+        self.results["Qsr3"].append(Q_sr[3])
+        self.results["Qsr4"].append(Q_sr[4])
+        self.results["Qsr5"].append(Q_sr[5])
+
+        self.results["Qmf0"].append(Q_allo[0])
+        self.results["Qmf1"].append(Q_allo[1])
+        self.results["Qmf2"].append(Q_allo[2])
+        self.results["Qmf3"].append(Q_allo[3])
+        self.results["Qmf4"].append(Q_allo[4])
+        self.results["Qmf5"].append(Q_allo[5])
+
+        self.results["Qprox0"].append(self.Qprox[0])
+        self.results["Qprox1"].append(self.Qprox[1])
+        self.results["Qprox2"].append(self.Qprox[2])
+        self.results["Qprox3"].append(self.Qprox[3])
+        self.results["Qprox4"].append(self.Qprox[4])
+        self.results["Qprox5"].append(self.Qprox[5])
+
+        self.results["Qdist0"].append(self.Qdist[0])
+        self.results["Qdist1"].append(self.Qdist[1])
+        self.results["Qdist2"].append(self.Qdist[2])
+        self.results["Qdist3"].append(self.Qdist[3])
+        self.results["Qdist4"].append(self.Qdist[4])
+        self.results["Qdist5"].append(self.Qdist[5])
+
+        self.results["Qcomb0"].append(Q_combined[0])
+        self.results["Qcomb1"].append(Q_combined[1])
+        self.results["Qcomb2"].append(Q_combined[2])
+        self.results["Qcomb3"].append(Q_combined[3])
+        self.results["Qcomb4"].append(Q_combined[4])
+        self.results["Qcomb5"].append(Q_combined[5])
+
+        self.results['syn_prox_mean'].append(self.DLS.weights[0:80].mean())
+        self.results['syn_dist_mean'].append(self.DLS.weights[80:160].mean())
+
+        if Q_allo.argmax() == np.array(Q_combined).argmax():
+            self.results["Qcombmf"].append(1)
+        else:
+            self.results["Qcombmf"].append(0)
+
+        if np.array(Q_sr).argmax() == np.array(Q_combined).argmax():
+            self.results["Qcombsr"].append(1)
+        else:
+            self.results["Qcombsr"].append(0)
+
+
+        if np.array(self.Qdist).argmax() == np.array(self.Qc).argmax():
+            self.results["Qcombdist"].append(1)
+        else:
+            self.results["Qcombdist"].append(0)
+
+        if np.array(self.Qprox).argmax() == np.array(self.Qc).argmax():
+            self.results["Qcombprox"].append(1)
+        else:
+            self.results["Qcombprox"].append(0)
+
+        self.results['rew_func_sum'].append(self.HPC.R_hat.sum())
+
+
     def take_decision(self, s, orientation):
         """
         Compute the preferred action of the fusion model at a given timestep.
@@ -132,7 +233,9 @@ class CombinedAgent(Agent):
         :return type: int and int
         """
         # computing of the fusion model Q-values
-        Q_combined, _, _, _ = self.compute_Q(s)
+        Q_combined, Q_ego, Q_allo, Q_sr = self.compute_Q(s)
+
+        self.save_internal(Q_allo, Q_sr, Q_combined)
 
         # selection of the preferred action in the allocentric and egocentric frame
         allo_a = self.softmax_selection(Q=Q_combined, inv_temp=self.inv_temp)
@@ -162,15 +265,16 @@ class CombinedAgent(Agent):
         :param orientation: the current orientation of the agent
         :type orientation: int
         """
-        RPE = self.DLS.update(previous_state, reward, s, allo_a, ego_a, orientation)
+        if self.learning:
+            RPE = self.DLS.update(previous_state, reward, s, allo_a, ego_a, orientation)
         if not self.lesion_hippocampus:
             SPE = self.HPC.update(previous_state, reward, s, allo_a, ego_a, orientation)
-
-        # Reliability updates
-        if self.env.is_terminal(s):
-            self.DLS.update_reliability(RPE)
-            if not self.lesion_hippocampus:
-                self.HPC.update_reliability(SPE, previous_state)
+        if self.learning:
+            # Reliability updates
+            if self.env.is_terminal(s):
+                self.DLS.update_reliability(RPE)
+                if not self.lesion_hippocampus:
+                    self.HPC.update_reliability(SPE, previous_state)
 
     def compute_Q(self, state_idx):
         """
@@ -193,6 +297,9 @@ class CombinedAgent(Agent):
 
         # compute DLS Q
         visual_rep = self.DLS.get_feature_rep(state_idx)
+        self.Qprox = self.DLS.weights[0:80].T @ visual_rep[0:80]
+        self.Qdist = self.DLS.weights[80:160].T @ visual_rep[80:160]
+        self.Qc = self.DLS.weights[0:160].T @ visual_rep[0:160]
         Q_ego = self.DLS.compute_Q(visual_rep)
         Q_allo = self.DLS.compute_Q_allo(Q_ego)
 
@@ -243,8 +350,8 @@ class CombinedAgent(Agent):
         Compute the transition rate from MF to SR, which is function of the reliability of the MF
         (see Geerts 2020 for corresponding equation)
 
-        :param chi_mb: reliability of the MF
-        :type chi_mb: float
+        :param chi_mf: reliability of the MF
+        :type chi_mf: float
         :returns: the transition rate from MF to SR
         :return type: float
         """

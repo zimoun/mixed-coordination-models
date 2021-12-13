@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 # the function allows to compare original and interpreted data
 def get_pearce_experimental_data():
 
-    fig, axs = plt.subplots(1, 2, figsize=(15,4))
+    fig, axs = plt.subplots(1, 2, figsize=(15,6))
 
     axs[0].set(title="Original visual results")
     axs[0].imshow(mpimg.imread("../images/results_pearce.jpg"))

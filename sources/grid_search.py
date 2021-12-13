@@ -522,28 +522,78 @@ def perform_statical_analyses_pearce(directory):
             one_agent_df_les = pd.read_csv("../results/"+directory+"/pearce_lesion/pearce_104111True"+str(res_df.iloc[agent_ind].srlr)+str(res_df.iloc[agent_ind].qlr)+str(int(res_df.iloc[agent_ind].inv_temp))+str(int(res_df.iloc[agent_ind].inv_temp))+str(int(res_df.iloc[agent_ind].inv_temp))+str(res_df.iloc[agent_ind].gamma)+str(res_df.iloc[agent_ind].eta)+"0.010.13.21.14MB500TrueFalseTrue/agent0.csv")
         one_agent_df["agent"] = agent_ind
         one_agent_df_les["agent"] = agent_ind
-        one_agent_df = one_agent_df.pivot_table(index=['agent', 'session', 'trial'], aggfunc='mean')
-        one_agent_df_les = one_agent_df_les.pivot_table(index=['agent', 'session', 'trial'], aggfunc='mean')
+        one_agent_df = one_agent_df.pivot_table(index=['agent', 'trial'], aggfunc='mean')
+        one_agent_df_les = one_agent_df_les.pivot_table(index=['agent', 'trial'], aggfunc='mean')
         df_analysis=df_analysis.append(one_agent_df)
         df_analysis_les=df_analysis_les.append(one_agent_df_les)
+
+
     # ols function doesn't like spaces
-    df_analysis["escape_time"] = df_analysis["escape time"]
-    df_analysis_les["escape_time"] = df_analysis_les["escape time"]
+    # df_analysis["escape_time"] = df_analysis["escape time"]
+    # df_analysis_les["escape_time"] = df_analysis_les["escape time"]
 
     tests_results = []
     p = 0.05
+
+
     # perform the statistical test for each cluster of agents
     print("Performing ANOVA")
     for cluster_ind in range(len(res_df)):
         df_tmp = df_analysis.loc[closests[cluster_ind][0:100]]
         df_tmp_les = df_analysis_les.loc[closests[cluster_ind][0:100]]
+
+        # 200 rows, 100*trial 1, 100*trial 4
+        df_anova_trial = df_tmp.reset_index()
+        df_anova_trial = df_anova_trial[np.logical_or(df_anova_trial["trial"]==0, df_anova_trial["trial"]==3)]
+        df_anova_trial = df_anova_trial.pivot_table(index=['agent', 'trial'], aggfunc='mean')
+        df_anova_trial = df_anova_trial[["escape time"]]
+
+        # 200 rows, 100*trial 1, 100*trial 4
+        df_anova_trial1 = df_tmp.reset_index()
+        df_anova_trial1 = df_anova_trial1[df_anova_trial1["trial"]==0]
+        df_anova_trial1 = df_anova_trial1.pivot_table(index=['agent', 'trial'], aggfunc='mean')
+        df_anova_trial1 = df_anova_trial1[["escape time"]]
+
+        df_anova_trial4 = df_tmp.reset_index()
+        df_anova_trial4 = df_anova_trial4[df_anova_trial4["trial"]==3]
+        df_anova_trial4 = df_anova_trial4.pivot_table(index=['agent', 'trial'], aggfunc='mean')
+        df_anova_trial4 = df_anova_trial4[["escape time"]]
+
+        # 200 rows, 100*trial 1, 100*trial 4
+        df_anova_trial_lesion1 = df_tmp_les.reset_index()
+        df_anova_trial_lesion1 = df_anova_trial_lesion1[df_anova_trial_lesion1["trial"]==0]
+        df_anova_trial_lesion1 = df_anova_trial_lesion1.pivot_table(index=['agent', 'trial'], aggfunc='mean')
+        df_anova_trial_lesion1 = df_anova_trial_lesion1[["escape time"]]
+
+        df_anova_trial_lesion4 = df_tmp_les.reset_index()
+        df_anova_trial_lesion4 = df_anova_trial_lesion4[df_anova_trial_lesion4["trial"]==3]
+        df_anova_trial_lesion4 = df_anova_trial_lesion4.pivot_table(index=['agent', 'trial'], aggfunc='mean')
+        df_anova_trial_lesion4 = df_anova_trial_lesion4[["escape time"]]
+
+        df_anova_trial1["group"] = "normal"
+        df_anova_trial_lesion1["group"] = "lesioned"
+        df_anova_trial4["group"] = "normal"
+        df_anova_trial_lesion4["group"] = "lesioned"
+
+        df_both_1 = pd.concat([df_anova_trial1, df_anova_trial_lesion1])
+        df_both_4 = pd.concat([df_anova_trial4, df_anova_trial_lesion4])
         print("agent: "+ str(cluster_ind), end="\r")
         # two way anova on trial and session (IV) and escape time (DV)
-        model = ols('escape_time ~ C(session) + C(trial) + C(session):C(trial)', data=df_tmp.reset_index()).fit()
+        df_anova_trial["escape_time"] = df_anova_trial["escape time"]
+        model = ols('escape_time ~ C(trial)', data=df_anova_trial.reset_index()).fit()
         tmp = sm.stats.anova_lm(model, typ=2)
-        model2 = ols('escape_time ~ C(session) + C(trial) + C(session):C(trial)', data=df_tmp_les.reset_index()).fit()
+
+        # perform ANOVA (IV -> group, DV -> escape time)
+        df_both_4["escape_time"] = df_both_4["escape time"]
+        model2 = ols('escape_time ~ C(group) + C(group)', data=df_both_4.reset_index()).fit()
         tmp2 = sm.stats.anova_lm(model2, typ=2)
-        tests_results.append(tmp["PR(>F)"]["C(session)"]<p and tmp["PR(>F)"]["C(trial)"]<p and tmp2["PR(>F)"]["C(session)"]<p)
+
+        df_both_1["escape_time"] = df_both_1["escape time"]
+        model3 = ols('escape_time ~ C(group) + C(group)', data=df_both_1.reset_index()).fit()
+        tmp3 = sm.stats.anova_lm(model3, typ=2)
+        # model2 = ols('escape_time ~ C(trial)', data=df_tmp_les.reset_index()).fit()
+        # tmp2 = sm.stats.anova_lm(model2, typ=2)
+        tests_results.append(tmp["PR(>F)"]["C(trial)"]<p and tmp2["PR(>F)"]["C(group)"]<p and tmp3["PR(>F)"]["C(group)"]<p)
 
     res_df["anova_pearce"] = tests_results
     res_df.to_csv("../results/"+directory+"/mean_square_processed.csv", index=False)
@@ -599,9 +649,11 @@ def perform_statical_analyses_rodrigo(directory):
     helmert_rodrigo_0vs_results_p = []
     helmert_rodrigo_45vs_results_p = []
     helmert_rodrigo_90vs_results_p = []
+    helmert_rodrigo_135vs_results_p = []
     helmert_rodrigo_0vs_results_d = []
     helmert_rodrigo_45vs_results_d = []
     helmert_rodrigo_90vs_results_d = []
+    helmert_rodrigo_135vs_results_d = []
     anova_rodrigo_results = []
     ttest_rodrigo_results = []
 
@@ -618,15 +670,17 @@ def perform_statical_analyses_rodrigo(directory):
 
         # HELMERT TESTS
         helmert = lambda lst : ols("isinoctant_proximal ~ C(angle, Helmert)", data=cluster_df[cluster_df["angle"].isin(lst)]).fit()
-        helmert_rodrigo_0vs_results_p.append(helmert([0,45,90,135,180]).f_pvalue < p)
-        helmert_rodrigo_45vs_results_p.append(helmert([45,90,135,180]).f_pvalue < p)
-        helmert_rodrigo_90vs_results_p.append(helmert([90,135,180]).f_pvalue < p)
+        helmert_rodrigo_0vs_results_p.append(helmert([0,45,90,135,180]).f_pvalue)
+        helmert_rodrigo_45vs_results_p.append(helmert([45,90,135,180]).f_pvalue)
+        helmert_rodrigo_90vs_results_p.append(helmert([90,135,180]).f_pvalue)
+        helmert_rodrigo_135vs_results_p.append(helmert([135,180]).f_pvalue)
 
         # HELMERT TESTS
         helmert = lambda lst : ols("isinoctant_distal ~ C(angle, Helmert)", data=cluster_df[cluster_df["angle"].isin(lst)]).fit()
-        helmert_rodrigo_0vs_results_d.append(helmert([0,45,90,135,180]).f_pvalue < p)
-        helmert_rodrigo_45vs_results_d.append(helmert([45,90,135,180]).f_pvalue < p)
-        helmert_rodrigo_90vs_results_d.append(helmert([90,135,180]).f_pvalue < p)
+        helmert_rodrigo_0vs_results_d.append(helmert([0,45,90,135,180]).f_pvalue)
+        helmert_rodrigo_45vs_results_d.append(helmert([45,90,135,180]).f_pvalue)
+        helmert_rodrigo_90vs_results_d.append(helmert([90,135,180]).f_pvalue)
+        helmert_rodrigo_135vs_results_d.append(helmert([135,180]).f_pvalue)
 
         # ANOVA
         model = ols('isinoctant_proximal ~ C(angle) + C(angle) + C(angle):C(angle)', data=cluster_df).fit()
@@ -644,9 +698,11 @@ def perform_statical_analyses_rodrigo(directory):
     res_df["helmert_rodrigo_0vs_p"] = helmert_rodrigo_0vs_results_p
     res_df["helmert_rodrigo_45vs_p"] = helmert_rodrigo_45vs_results_p
     res_df["helmert_rodrigo_90vs_p"] = helmert_rodrigo_90vs_results_p
+    res_df["helmert_rodrigo_135vs_p"] = helmert_rodrigo_135vs_results_p
     res_df["helmert_rodrigo_0vs_d"] = helmert_rodrigo_0vs_results_d
     res_df["helmert_rodrigo_45vs_d"] = helmert_rodrigo_45vs_results_d
     res_df["helmert_rodrigo_90vs_d"] = helmert_rodrigo_90vs_results_d
+    res_df["helmert_rodrigo_135vs_d"] = helmert_rodrigo_135vs_results_d
     res_df["anova_rodrigo"] = anova_rodrigo_results
     res_df["ttest_rodrigo"] = ttest_rodrigo_results
 
@@ -691,14 +747,14 @@ def plot_single_perfs(df, bins_nbr, dim1_name, dim2_name, expe, relative=True):
         try:
             validated_clusters_df = validated_clusters_df[validated_clusters_df["ttest_rodrigo"] == True]
             validated_clusters_df = validated_clusters_df[validated_clusters_df["anova_rodrigo"] == True]
-            validated_clusters_df = validated_clusters_df[validated_clusters_df["helmert_rodrigo_0vs_p"] == True]
-            validated_clusters_df = validated_clusters_df[validated_clusters_df["helmert_rodrigo_45vs_p"] == True]
-            validated_clusters_df = validated_clusters_df[validated_clusters_df["helmert_rodrigo_90vs_p"] == True]
-            #validated_clusters_df = validated_clusters_df[validated_clusters_df["helmert_rodrigo_135vs_p"] == True]
-            validated_clusters_df = validated_clusters_df[validated_clusters_df["helmert_rodrigo_0vs_d"] == True]
-            validated_clusters_df = validated_clusters_df[validated_clusters_df["helmert_rodrigo_45vs_d"] == True]
-            validated_clusters_df = validated_clusters_df[validated_clusters_df["helmert_rodrigo_90vs_d"] == True]
-            #validated_clusters_df = validated_clusters_df[validated_clusters_df["helmert_rodrigo_135vs_d"] == True]
+            validated_clusters_df = validated_clusters_df[validated_clusters_df["helmert_rodrigo_0vs_p"] < 0.005]
+            validated_clusters_df = validated_clusters_df[validated_clusters_df["helmert_rodrigo_45vs_p"] < 0.005]
+            validated_clusters_df = validated_clusters_df[validated_clusters_df["helmert_rodrigo_90vs_p"] < 0.005]
+            validated_clusters_df = validated_clusters_df[validated_clusters_df["helmert_rodrigo_135vs_p"] < 0.005]
+            validated_clusters_df = validated_clusters_df[validated_clusters_df["helmert_rodrigo_0vs_d"] < 0.05]
+            validated_clusters_df = validated_clusters_df[validated_clusters_df["helmert_rodrigo_45vs_d"] > 0.05]
+            validated_clusters_df = validated_clusters_df[validated_clusters_df["helmert_rodrigo_90vs_d"] > 0.05]
+            validated_clusters_df = validated_clusters_df[validated_clusters_df["helmert_rodrigo_135vs_d"] > 0.05]
         except:
             print("Warning: no statistical tests were performed on simulations data for Rodrigo's experiment")
 

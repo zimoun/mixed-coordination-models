@@ -1,6 +1,7 @@
 import copy
 import math
 import utils
+import random
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -295,6 +296,7 @@ class HexWaterMaze(Environment):
         self.platform_state = np.random.choice([i for i in self.state_indices if not i in states_close_to_centre])
         self.previous_platform_state = None
         self.reward_func = np.zeros((self.nr_states, self.nr_actions, self.nr_states))
+        self.lol = True
         self.set_reward_func()
         # MODIF
         self.landmark_dist = landmark_dist
@@ -310,6 +312,7 @@ class HexWaterMaze(Environment):
         self.previous_platform_state = self.platform_state
         self.platform_state = state_idx
         self.set_reward_func()
+
 
     def add_terminal(self, state):
         self.other_terminals.append(state)
@@ -328,11 +331,32 @@ class HexWaterMaze(Environment):
         landmark_loc = (platform_loc[0], platform_loc[1]+self.landmark_dist, platform_loc[2])
         self.proximal_landmark_location = self.grid.to_cartesian(landmark_loc)
 
+    def set_proximal_landmark_random(self): # set landmark next to the platform
+
+        platform_loc = self.grid.cube_coords[self.platform_state]
+        # the hexagonal grid has 3 dimensions
+        # here the second dimension is considered as the Y dimension of a cartesian coordinate system
+        randx = random.randint(-1,1)
+        randy = random.randint(-1,1)
+        randz = random.randint(-1,1)
+        landmark_loc = (platform_loc[0]+randx*10, platform_loc[1]+randy*10, platform_loc[2]+randz*10)
+        self.proximal_landmark_location = self.grid.to_cartesian(landmark_loc)
+        self.proximal_landmark_location = (0.,0.)
+
     def set_distal_landmark(self):
 
         platform_loc = self.grid.cart_coords[self.platform_state]
         landmark_loc = (platform_loc[0]*2, platform_loc[1]*2)
         self.distal_landmark_location = landmark_loc
+
+    def set_distal_landmark2(self):
+        #d
+        self.lol = False
+        self.distal_landmark_location = (0., 0.)
+
+    def set_distal_landmark3(self):
+        self.lol = True
+        self.distal_landmark_location = (0., 0.)
 
     def get_next_state(self, current_state, action):
         # stored transitions, as using np.flatnonzero caused dramatical computational cost increase
@@ -407,7 +431,6 @@ class HexWaterMaze(Environment):
         :return:
         """
         transition_matrix = self.get_transition_matrix(policy)
-        print(transition_matrix[240])
         m = np.linalg.inv(np.eye(self.nr_states) - gamma * transition_matrix)
         return m
 
@@ -571,7 +594,6 @@ class HexWaterMaze(Environment):
         :returns type: float
         """
 
-        agent.setup()
         self.reset()
         orientation = self.agent_orientation
         t = 0
@@ -581,6 +603,7 @@ class HexWaterMaze(Environment):
 
         # run until the agent find the platform or reach the time limit
         while not self.is_terminal(s) and t < time_limit:
+            agent.setup()
 
             allo_a, ego_a = agent.take_decision(s, orientation) # get the agent's allocentric and egocentric preferred action
             previous_state = s

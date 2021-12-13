@@ -49,7 +49,7 @@ class RTDP(Agent, ModelBasedAgent, FirstOrderAgent):
     def take_decision(self): # not used yet
         pass
 
-    def update(self, previous_state, reward, s, allo_a, ego_a, orientation):
+    def update(self, previous_state, reward, s, allo_a, ego_a, orientation, replay=True):
         """
         Updates the transition and reward functions updates. See (Barto, Bradtke, and Singh 1995) for original equations
         Updates the value function using replay (single full value backup)
@@ -81,10 +81,12 @@ class RTDP(Agent, ModelBasedAgent, FirstOrderAgent):
         self.update_R(s, reward) # reward function udate
         Qmax = self.Q.max(axis=1)
         # execution of a single full backup (replay/planning)
-        for rs in range(0,271): # ss = replay state
-            for ra in range(0,6): # ra = replay action
-                # updating of the value function using the model of the environment (reward+transition function)
-                self.Q[rs,ra] =  self.R_hat[self.env.get_next_state_and_reward(rs,ra)[0]] + self.gamma*(np.dot(self.hatP[rs,ra,:], Qmax))
+        if replay:
+            for nreplay in range(1): # set to 1 for the no intrinsic cost of MB mode
+                for rs in range(0,271): # ss = replay state
+                    for ra in range(0,6): # ra = replay action
+                        # updating of the value function using the model of the environment (reward+transition function)
+                        self.Q[rs,ra] =  self.R_hat[self.env.get_next_state_and_reward(rs,ra)[0]] + self.gamma*(np.dot(self.hatP[rs,ra,:], Qmax))
 
         # for uncertainty based arbitrator
         RPE = self.compute_error(previous_state, s, reward, Q_values[allo_a])

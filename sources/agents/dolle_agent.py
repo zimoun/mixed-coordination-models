@@ -50,6 +50,9 @@ class DolleAgent(Agent, AssociativeAgent):
 
         self.learning=True
 
+        self.Qprox = np.zeros(6)
+        self.Qdist = np.zeros(6)
+
         self.lesion_striatum = ag_params.lesion_DLS
         self.lesion_hippocampus = ag_params.lesion_HPC
         self.lesion_PFC = ag_params.lesion_PFC
@@ -93,6 +96,21 @@ class DolleAgent(Agent, AssociativeAgent):
                   'syn_prox_mean_arbi': [self.weights[0:80].mean()],
                   'syn_dist_mean_arbi': [self.weights[80:160].mean()],
                   'syn_pc_arbi': [self.weights[160:240].mean()],
+                  "Qprox0": [0.],
+                  "Qprox1": [0.],
+                  "Qprox2": [0.],
+                  "Qprox3": [0.],
+                  "Qprox4": [0.],
+                  "Qprox5": [0.],
+
+                  "Qdist0": [0.],
+                  "Qdist1": [0.],
+                  "Qdist2": [0.],
+                  "Qdist3": [0.],
+                  "Qdist4": [0.],
+                  "Qdist5": [0.],
+                  "Qcombdist": [0.],
+                  "Qcombprox": [0.],
 
                   }
 
@@ -151,6 +169,29 @@ class DolleAgent(Agent, AssociativeAgent):
         self.results['syn_prox_mean_arbi'].append(self.weights[0:80].mean())
         self.results['syn_dist_mean_arbi'].append(self.weights[80:160].mean())
         self.results['syn_pc_arbi'].append(self.weights[160:240].mean())
+        self.results["Qprox0"].append(self.Qprox[0])
+        self.results["Qprox1"].append(self.Qprox[1])
+        self.results["Qprox2"].append(self.Qprox[2])
+        self.results["Qprox3"].append(self.Qprox[3])
+        self.results["Qprox4"].append(self.Qprox[4])
+        self.results["Qprox5"].append(self.Qprox[5])
+
+        self.results["Qdist0"].append(self.Qdist[0])
+        self.results["Qdist1"].append(self.Qdist[1])
+        self.results["Qdist2"].append(self.Qdist[2])
+        self.results["Qdist3"].append(self.Qdist[3])
+        self.results["Qdist4"].append(self.Qdist[4])
+        self.results["Qdist5"].append(self.Qdist[5])
+
+        if np.array(self.Qdist).argmax() == np.array(self.Qc).argmax():
+            self.results["Qcombdist"].append(1)
+        else:
+            self.results["Qcombdist"].append(0)
+
+        if np.array(self.Qprox).argmax() == np.array(self.Qc).argmax():
+            self.results["Qcombprox"].append(1)
+        else:
+            self.results["Qcombprox"].append(0)
 
     def take_decision(self, s, orientation):
         """
@@ -319,6 +360,9 @@ class DolleAgent(Agent, AssociativeAgent):
             visual_rep = self.DLS.get_feature_rep(state_idx)
             Q_ego = self.DLS.compute_Q(visual_rep)
         Q_allo = self.DLS.compute_Q_allo(Q_ego)
+        self.Qprox = self.DLS.weights[0:80].T @ visual_rep[0:80]
+        self.Qdist = self.DLS.weights[80:160].T @ visual_rep[80:160]
+        self.Qc = self.DLS.weights[0:160].T @ visual_rep[0:160]
 
         # Select navigation expert
         features_arb = self.get_feature_rep(state_idx)

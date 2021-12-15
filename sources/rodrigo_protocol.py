@@ -193,9 +193,9 @@ def perform_group_rodrigo(env_params, ag_params, show_plots=True, save_plots=Tru
                         res['angle'] = "extinction"
 
                     elif special_trial == trial and cond == "test":
-                        agent.lesion_hippocampus = True
-                        agent.learning = False
-                        agent.lesion_PFC = True
+                        agent.lesion_hippocampus = False
+                        agent.learning = True
+                        agent.lesion_PFC = False
                         envi.delete_plaform()
                         envi.set_angle_proximal_beacon(angles[ses]) # rotate the proximal landmark
                         res = envi.one_episode(agent, env_params.time_limit/2)

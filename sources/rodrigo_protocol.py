@@ -310,15 +310,15 @@ def run_statistical_tests_rodrigo(path, n_agents, show_plots):
         # model = ols('isinoctant_proximal ~ C(angle)', data=dat).fit()
         # print(sm.stats.anova_lm(model, typ=2))
 
-        # print("Kruskal 0 vs 45, proximal: ", stats.kruskal(dist0[50:100]["isinoctant_proximal"], dist45[50:100]["isinoctant_proximal"]))
-        # print("Kruskal 45 vs 90, proximal: ", stats.kruskal(dist45[50:100]["isinoctant_proximal"], dist90[50:100]["isinoctant_proximal"]))
-        # print("Kruskal 90 vs 135, proximal: ", stats.kruskal(dist90[50:100]["isinoctant_proximal"], dist135[50:100]["isinoctant_proximal"]))
-        # print("Kruskal 135 vs 180, proximal: ", stats.kruskal(dist135[50:100]["isinoctant_proximal"], dist180[50:100]["isinoctant_proximal"]))
-        #
-        # print("Kruskal 0 vs 45, distal: ", stats.kruskal(dist0["isinoctant_distal"], dist45["isinoctant_distal"]))
-        # print("Kruskal 45 vs 90, distal: ", stats.kruskal(dist45["isinoctant_distal"], dist90["isinoctant_distal"]))
-        # print("Kruskal 90 vs 135, distal: ", stats.kruskal(dist90["isinoctant_distal"], dist135["isinoctant_distal"]))
-        # print("Kruskal 135 vs 180, distal: ", stats.kruskal(dist135["isinoctant_distal"], dist180["isinoctant_distal"]))
+        print("Kruskal 0 vs 45, proximal: ", stats.kruskal(dist0[50:100]["isinoctant_proximal"], dist45[50:100]["isinoctant_proximal"]))
+        print("Kruskal 45 vs 90, proximal: ", stats.kruskal(dist45[50:100]["isinoctant_proximal"], dist90[50:100]["isinoctant_proximal"]))
+        print("Kruskal 90 vs 135, proximal: ", stats.kruskal(dist90[50:100]["isinoctant_proximal"], dist135[50:100]["isinoctant_proximal"]))
+        print("Kruskal 135 vs 180, proximal: ", stats.kruskal(dist135[50:100]["isinoctant_proximal"], dist180[50:100]["isinoctant_proximal"]))
+
+        print("Kruskal 0 vs 45, distal: ", stats.kruskal(dist0["isinoctant_distal"], dist45["isinoctant_distal"]))
+        print("Kruskal 45 vs 90, distal: ", stats.kruskal(dist45["isinoctant_distal"], dist90["isinoctant_distal"]))
+        print("Kruskal 90 vs 135, distal: ", stats.kruskal(dist90["isinoctant_distal"], dist135["isinoctant_distal"]))
+        print("Kruskal 135 vs 180, distal: ", stats.kruskal(dist135["isinoctant_distal"], dist180["isinoctant_distal"]))
 
 
         octant_occup_df = pd.concat([dist0, dist45, dist90, dist135, dist180], ignore_index=False)
@@ -423,6 +423,161 @@ def run_statistical_tests_rodrigo(path, n_agents, show_plots):
         f.close()
 
 
+def run_statistical_tests_rodrigo_extinction(path, n_agents, show_plots):
+    """
+    Check and print if a group of agents validate multiple statistical test,
+    originally performed in rodrigo 2006 (Helmert contrasts, ANOVAs, TTests)
+
+    :param path: path where the simulation data to analyse is stored
+    :type path: str
+    """
+
+
+    coords = get_coords() # associate each state of the water-maze with a cartesian coordinate
+    df_analysis = pd.DataFrame()
+    agents_df_lst = []
+
+    for agent_ind in range(n_agents):
+        print("agent: "+ str(agent_ind), end="\r")
+        one_agent_df = pd.read_csv(path+"/agent"+str(agent_ind)+".csv")
+        one_agent_df["agent"] = agent_ind
+        one_agent_df = one_agent_df[one_agent_df["cond"] == "extinction"]
+        agents_df_lst.append(one_agent_df)
+
+    print("Concatenating all data")
+    df_analysis = pd.concat(agents_df_lst)
+
+
+    print("Computing proximal and distal octants mean proportion of occupation on test episodes")
+    dist0 = get_mean_occupation_octant_extinction(0, df_analysis, coords)
+    dist45 = get_mean_occupation_octant_extinction(45, df_analysis, coords)
+    dist90 = get_mean_occupation_octant_extinction(90, df_analysis, coords)
+    dist135 = get_mean_occupation_octant_extinction(135, df_analysis, coords)
+
+    # dat=pd.concat([dist0, dist45], ignore_index=False)
+    # model = ols('isinoctant_proximal ~ C(angle)', data=dat).fit()
+    # print(sm.stats.anova_lm(model, typ=2))
+    # dat=pd.concat([dist45, dist90], ignore_index=False)
+    # model = ols('isinoctant_proximal ~ C(angle)', data=dat).fit()
+    # print(sm.stats.anova_lm(model, typ=2))
+    # dat=pd.concat([dist90, dist135], ignore_index=False)
+    # model = ols('isinoctant_proximal ~ C(angle)', data=dat).fit()
+    # print(sm.stats.anova_lm(model, typ=2))
+    # dat=pd.concat([dist135, dist180], ignore_index=False)
+    # model = ols('isinoctant_proximal ~ C(angle)', data=dat).fit()
+    # print(sm.stats.anova_lm(model, typ=2))
+
+    # print("Kruskal 0 vs 45, proximal: ", stats.kruskal(dist0[50:100]["isinoctant_proximal"], dist45[50:100]["isinoctant_proximal"]))
+    # print("Kruskal 45 vs 90, proximal: ", stats.kruskal(dist45[50:100]["isinoctant_proximal"], dist90[50:100]["isinoctant_proximal"]))
+    # print("Kruskal 90 vs 135, proximal: ", stats.kruskal(dist90[50:100]["isinoctant_proximal"], dist135[50:100]["isinoctant_proximal"]))
+    # print("Kruskal 135 vs 180, proximal: ", stats.kruskal(dist135[50:100]["isinoctant_proximal"], dist180[50:100]["isinoctant_proximal"]))
+    #
+    # print("Kruskal 0 vs 45, distal: ", stats.kruskal(dist0["isinoctant_distal"], dist45["isinoctant_distal"]))
+    # print("Kruskal 45 vs 90, distal: ", stats.kruskal(dist45["isinoctant_distal"], dist90["isinoctant_distal"]))
+    # print("Kruskal 90 vs 135, distal: ", stats.kruskal(dist90["isinoctant_distal"], dist135["isinoctant_distal"]))
+    # print("Kruskal 135 vs 180, distal: ", stats.kruskal(dist135["isinoctant_distal"], dist180["isinoctant_distal"]))
+
+
+    octant_occup_df = pd.concat([dist0, dist45, dist90, dist135], ignore_index=False)
+
+    helmert_rodrigo_0vs_results_p = []
+    helmert_rodrigo_45vs_results_p = []
+    helmert_rodrigo_90vs_results_p = []
+    helmert_rodrigo_0vs_results_d = []
+    helmert_rodrigo_45vs_results_d = []
+    helmert_rodrigo_90vs_results_d = []
+    anova_rodrigo_results = []
+    ttest_rodrigo_results = []
+
+    p = 0.05
+
+    print("Performing statistical analyses")
+    cluster_df = octant_occup_df
+    cluster_df = cluster_df.reset_index()
+    # HELMERT TESTS
+    # helmert_p = lambda lst : ols("isinoctant_proximal ~ C(angle, Helmert)", data=cluster_df[cluster_df["angle"].isin(lst)]).fit()
+    # helmert_rodrigo_0vs_results_p.append(helmert_p([0,45,90,135]).f_pvalue < p)
+    # helmert_rodrigo_45vs_results_p.append(helmert_p([45,90,135]).f_pvalue < p)
+    # helmert_rodrigo_90vs_results_p.append(helmert_p([90,135]).f_pvalue < p)
+
+    # HELMERT TESTS
+    # helmert_d = lambda lst : ols("isinoctant_distal ~ C(angle, Helmert)", data=cluster_df[cluster_df["angle"].isin(lst)]).fit()
+    # helmert_rodrigo_0vs_results_d.append(helmert_d([0,45,90,135]).f_pvalue < p)
+    # helmert_rodrigo_45vs_results_d.append(helmert_d([45,90,135]).f_pvalue < p)
+    # helmert_rodrigo_90vs_results_d.append(helmert_d([90,135]).f_pvalue < p)
+
+    # ANOVA
+    # model = ols('isinoctant_proximal ~ C(angle)', data=cluster_df).fit()
+    # tmp = sm.stats.anova_lm(model, typ=2)
+    # model2 = ols('isinoctant_distal ~ C(angle)', data=cluster_df).fit()
+    # tmp2 = sm.stats.anova_lm(model2, typ=2)
+    # anova_rodrigo_results.append(tmp["PR(>F)"]["C(angle)"]<p and tmp2["PR(>F)"]["C(angle)"]<p)
+
+    # TTESTS
+    #ttest = lambda ang : stats.ttest_1samp(cluster_df[cluster_df["angle"] == ang].groupby("agent").mean()["isinoctant_proximal"],0.125).pvalue
+    ttest2 = lambda ang : stats.ttest_1samp(cluster_df[cluster_df["angle"] == ang].groupby("agent").mean()["isinoctant_distal"],0.125).pvalue
+    #ttest_rodrigo_results.append(ttest2(0) < p and ttest2(45) < p)
+
+    if show_plots:
+        print()
+        print("Performing statistical analyses...")
+        print()
+        print("Helmert tests")
+        # print("p < 0.05 on 0° versus others (proximal beacon): ", helmert_p([0,45,90,135]).f_pvalue < p, ", F: ", helmert_p([0,45,90,135]).fvalue)
+        # print("p < 0.05 on 45° versus others (proximal beacon): ",helmert_p([45,90,135]).f_pvalue < p, ", F: ", helmert_p([45,90,135]).fvalue)
+        # print("p < 0.05 on 90° versus others (proximal beacon): ",helmert_p([90,135]).f_pvalue < p, ", F: ", helmert_p([90,135]).fvalue)
+        # print("p < 0.05 on 0° versus others (distal beacon): ",helmert_d([0,45,90,135]).f_pvalue < p, ", F: ", helmert_d([0,45,90,135]).fvalue)
+        # print("p < 0.05 on 45° versus others (distal beacon): ",helmert_d([45,90,135]).f_pvalue < p, ", F: ", helmert_d([45,90,135]).fvalue)
+        # print("p < 0.05 on 90° versus others (distal beacon): ",helmert_d([90,135]).f_pvalue < p, ", F: ", helmert_d([90,135]).fvalue)
+        print()
+        print("ANOVAS")
+        # print("Effect of angle on proximal beacon's octant occupation: ",tmp["PR(>F)"]["C(angle)"]<p, ", F: ", tmp["F"]["C(angle)"])
+        # print("Effect of angle on distal beacon's octant occupation: ",tmp2["PR(>F)"]["C(angle)"]<p, ", F: ", tmp2["F"]["C(angle)"])
+        print()
+        print("TTESTS")
+        # print("Proximal beacon's octant occupation different from chance: at 0° condition: ", ttest(0) < p)
+        # print("Proximal beacon's octant occupation different from chance: at 45° condition: ", ttest(45) < p)
+        # print("Proximal beacon's octant occupation different from chance: at 90° condition: ", ttest(90) < p)
+        # print("Proximal beacon's octant occupation different from chance: at 135° condition: ", ttest(135) < p)
+        print("Distal beacon's octant occupation different from chance: at 0° condition: ", ttest2(0) < p)
+        print("Distal beacon's octant occupation different from chance: at 45° condition: ", ttest2(45) < p)
+        print("Distal beacon's octant occupation different from chance: at 90° condition: ", ttest2(90) < p)
+        print("Distal beacon's octant occupation different from chance: at 135° condition: ", ttest2(135) < p)
+        print()
+
+    # f = open(path+"/statistical_tests_results.txt",'w')
+    # print("Helmert tests", file=f)
+    # print("p < 0.05 on 0° versus others (proximal beacon): ", helmert_p([0,45,90,135]).f_pvalue < p, file=f)
+    # print("p < 0.05 on 45° versus others (proximal beacon): ",helmert_p([45,90,135]).f_pvalue < p, file=f)
+    # print("p < 0.05 on 90° versus others (proximal beacon): ",helmert_p([90,135]).f_pvalue < p, file=f)
+    # print("p < 0.05 on 0° versus others (distal beacon): ",helmert_d([0,45,90,135]).f_pvalue < p, file=f)
+    # print("p < 0.05 on 45° versus others (distal beacon): ",helmert_d([45,90,135]).f_pvalue < p, file=f)
+    # print("p < 0.05 on 90° versus others (distal beacon): ",helmert_d([90,135]).f_pvalue < p, file=f)
+    # print("", file=f)
+    # print("ANOVAS", file=f)
+    # print("Effect of angle on proximal beacon's octant occupation: ",tmp["PR(>F)"]["C(angle)"]<p, file=f)
+    # print("Effect of angle on distal beacon's octant occupation: ",tmp2["PR(>F)"]["C(angle)"]<p, file=f)
+    # print("", file=f)
+    # print("TTESTS", file=f)
+    # print("Proximal beacon's octant occupation different from chance at 0° condition: ", ttest(0) < p, file=f)
+    # print("Proximal beacon's octant occupation different from chance at 45° condition: ", ttest(45) < p, file=f)
+    # print("Proximal beacon's octant occupation different from chance at 90° condition: ", ttest(90) < p, file=f)
+    # print("Proximal beacon's octant occupation different from chance at 135° condition: ", ttest(135) < p, file=f)
+    # print("Distal beacon's octant occupation different from chance: at 0° condition: ", ttest2(0) < p, file=f)
+    # print("Distal beacon's octant occupation different from chance: at 45° condition: ", ttest2(45) < p, file=f)
+    # print("Distal beacon's octant occupation different from chance: at 90° condition: ", ttest2(90) < p, file=f)
+    # print("Distal beacon's octant occupation different from chance: at 135° condition: ", ttest2(135) < p, file=f)
+    # f.close()
+    # except:
+    #     print("Statistical test failed (there might not be enough data)")
+    #     print()
+    #     f = open(path+"/statistical_tests_results.txt",'w')
+    #     print("Statistical test failed (there might not be enough data)", file=f)
+    #     f.close()
+
+
+
+
 def plot_rodrigo(results_folder, n_agents, show_plots, save_plots):
     """
     Plot a histogram of the mean proportion of occupancy of distal landmark octant and proximal landmark octant
@@ -486,6 +641,50 @@ def plot_rodrigo(results_folder, n_agents, show_plots, save_plots):
     plt.close()
 
     run_statistical_tests_rodrigo(results_folder, n_agents, show_plots)
+
+
+def plot_rodrigo_extinction(results_folder, n_agents, show_plots, save_plots):
+    """
+    Plot a histogram of the mean proportion of occupancy of distal landmark octant and proximal landmark octant
+    for each angle condition.
+
+    :param results_folder: path of the results folder where the data to plot is stored
+    :type results_folder: str
+    :param n_agents: number of simulations stored in results_folder
+    :type n_agents: int
+    :param show_plots: whether to display any created plot at the end of the simulations
+    :type show_plot: boolean
+    :param save_plots: whether to save any created plots in the results folder at the end of the simulations
+    :type save_plots: boolean
+    """
+    # get the mean occupancy of octants in each 10 conditions + the confidence interval (y) for each condition
+    (dist0, dist45, dist90, dist135, dist180, prox0, prox45, prox90, prox135, prox180, ydist0, ydist45, ydist90, ydist135, ydist180, yprox0, yprox45, yprox90, yprox135, yprox180) = get_values_rodrigo_extinction(results_folder, n_agents)
+    figure_folder = os.path.join(results_folder, 'figs')
+    fig, axs = plt.subplots(1, 2, figsize=(15,4))
+
+
+    axs[0].imshow(mpimg.imread("../images/results_rodrigo_distal.jpg"))
+    axs[0].set_xticks([])
+    axs[0].set_yticks([])
+    axs[0].set_frame_on(False)
+    axs[0].plot(aspect="auto")
+
+
+    axs[1].bar(["0°", "45°", "90°", "135°", "180°"], [dist0, dist45, dist90, dist135, dist180], yerr=[ydist0, ydist45, ydist90, ydist135, ydist180], color='gray', edgecolor="black")
+    axs[1].set_title("Our results")
+    axs[1].set_ylabel("Proportion of time searching in the distal landmark octant")
+    axs[1].set_xlabel("Tests")
+
+
+    if show_plots:
+        plt.show()
+    if save_plots:
+        plt.savefig(os.path.join(figure_folder, 'Mean proportion of occupation of octants.png'))
+
+    plt.close()
+
+    run_statistical_tests_rodrigo_extinction(results_folder, n_agents, show_plots)
+
 
 def plot_rodrigo_quivs(results_folder, agents, show_plots, save_plots):
     """
@@ -631,6 +830,32 @@ def get_mean_occupation_octant(angle, df_analysis, coords):
     return df_res
 
 
+def get_mean_occupation_octant_extinction(angle, df_analysis, coords):
+    """
+    Compute and return the mean proportion of occupancy of both the proximal beacon and distal beacon octants, on test trials,
+    at a specific angle of the proximal landmark rotation.
+
+    :param angle: the angle of the proximal landmark rotation on the test condition. Either 0°, 45°, 90°, 135° or 180°
+    :type angle: int
+    :param df_analysis: the DataFrame containing data of all agents simulated
+    :type df_analysis: pandas DataFrame
+    :param coords: a dictionary linking states to cartesian coordinates
+    :type coords: dict
+    :return type: pandas DataFrame
+    """
+    df = df_analysis[np.logical_and(df_analysis["cond"]=="extinction", df_analysis['stage'] == "second")]
+    df['angle'] = angle
+    df['isinoctant_distal'] = df.apply(lambda row: isinoctant(coords[row.state], coords[90]), axis=1)
+    # try:
+    #     df['isinoctant_proximal'] = df.apply(lambda row: isinoctant(coords[row.state], [float(row.proximal_posx), float(row.proximal_posy)]), axis=1)
+    # except: # for previous version
+    #        df['isinoctant_proximal'] = df.apply(lambda row: isinoctant(coords[row.state], [float(row.beacon_posx), float(row.beacon_posy)]), axis=1)
+    df_res = df.groupby("agent").mean()
+    df_res['isinoctant_distal'] = df_res['isinoctant_distal'].replace(np.inf, 0)
+    #df_res['isinoctant_proximal'] = df_res['isinoctant_proximal'].replace(np.inf, 0)
+    return df_res
+
+
 def get_meanin_octant(df, coords):
     """
     Compute and returns the mean proportion of occupation of the proximal and distal beacons at a specific angle of
@@ -655,7 +880,39 @@ def get_meanin_octant(df, coords):
     mean_proximal = np.asarray(df_prox, dtype=np.float64).mean()
     yerr_proximal = df_prox.std()/ np.sqrt(df_prox.shape[0])*1.96
 
+    mean_distal -= 0.125
+    mean_proximal -= 0.125
+
     return mean_distal, mean_proximal, yerr_distal, yerr_proximal
+
+
+def get_meanin_octant_extinction(df, coords):
+    """
+    Compute and returns the mean proportion of occupation of the proximal and distal beacons at a specific angle of
+    rotation of the proximal beacons, and the confidence interval for both measurements
+    :param df: DataFrame of logs recorded during the simulations, containing only data from test trials at a specific angle
+    :type df: pandas DataFrame
+    :param coords: Associate each state of the water-maze with a cartesian coordinate
+    :type coords: dict
+    :return type: tuple of four floats
+    """
+
+    df['isinoctant_distal'] = df.apply(lambda row: isinoctant(coords[row.state], coords[90]), axis=1)
+    #df['isinoctant_proximal'] = df.apply(lambda row: isinoctant(coords[row.state], [float(row.proximal_posx), float(row.proximal_posy)]), axis=1)
+
+    df_dist = df.groupby("agent")['isinoctant_distal'].apply(lambda x: np.sum(x)/250)
+    df_dist = df_dist.replace(np.inf, 0)
+    mean_distal = np.asarray(df_dist, dtype=np.float64).mean()
+    yerr_distal = df_dist.std()/ np.sqrt(df_dist.shape[0])*1.96
+
+    # df_prox = df.groupby("agent")['isinoctant_proximal'].apply(lambda x: np.sum(x)/250)
+    # df_prox = df_prox.replace(np.inf, 0)
+    # mean_proximal = np.asarray(df_prox, dtype=np.float64).mean()
+    # yerr_proximal = df_prox.std()/ np.sqrt(df_prox.shape[0])*1.96
+
+    mean_distal -= 0.125
+
+    return mean_distal, 0., yerr_distal, 0.
 
 
 def get_values_rodrigo(results_folder, n_agents):
@@ -682,6 +939,36 @@ def get_values_rodrigo(results_folder, n_agents):
     dist90, prox90, ydist90, yprox90 = get_meanin_octant(df90, coords)
     dist135, prox135, ydist135, yprox135 = get_meanin_octant(df135, coords)
     dist180, prox180, ydist180, yprox180 = get_meanin_octant(df180, coords)
+
+    return dist0, dist45, dist90, dist135, dist180, prox0, prox45, prox90, prox135, prox180, ydist0, ydist45, ydist90, ydist135, ydist180, yprox0, yprox45, yprox90, yprox135, yprox180
+
+
+def get_values_rodrigo_extinction(results_folder, n_agents):
+    """
+    Returns the mean proportion of occupancy of distal landmark octant and proximal landmark octant for each angle condition.
+    Also returns the confidence interval for each measurement.
+
+    :param results_folder: path of the results folder where the data is stored
+    :type results_folder: str
+    :param n_agents: number of simulations stored in results_folder
+    :type n_agents: int
+    :return type: tuple of floats
+    """
+    df = create_df(results_folder, n_agents)
+    coords = get_coords()
+
+    df0 = df[np.logical_and(np.logical_and(df["cond"]=="extinction", df["session"]=="1"), df['stage'] == "second")]
+    df45 = df[np.logical_and(np.logical_and(df["cond"]=="extinction", df["session"]=="3"), df['stage'] == "second")]
+    df90 = df[np.logical_and(np.logical_and(df["cond"]=="extinction", df["session"]=="5"), df['stage'] == "second")]
+    df135 = df[np.logical_and(np.logical_and(df["cond"]=="extinction", df["session"]=="7"), df['stage'] == "second")]
+    df180 = df[np.logical_and(np.logical_and(df["cond"]=="extinction", df["session"]=="9"), df['stage'] == "second")]
+
+
+    dist0, prox0, ydist0, yprox0 = get_meanin_octant_extinction(df0, coords)
+    dist45, prox45, ydist45, yprox45 = get_meanin_octant_extinction(df45, coords)
+    dist90, prox90, ydist90, yprox90 = get_meanin_octant_extinction(df90, coords)
+    dist135, prox135, ydist135, yprox135 = get_meanin_octant_extinction(df135, coords)
+    dist180, prox180, ydist180, yprox180 = get_meanin_octant_extinction(df180, coords)
 
     return dist0, dist45, dist90, dist135, dist180, prox0, prox45, prox90, prox135, prox180, ydist0, ydist45, ydist90, ydist135, ydist180, yprox0, yprox45, yprox90, yprox135, yprox180
 

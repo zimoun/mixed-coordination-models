@@ -249,6 +249,7 @@ def perform_group_rodrigo(env_params, ag_params, show_plots=True, save_plots=Tru
         # plot a histogram of the mean occupancy of distal landmark octant and proximal landmark octant for each angle condition
         if show_plots or save_plots:
             plot_rodrigo(results_folder, env_params.n_agents, show_plots, save_plots)
+            plot_rodrigo_extinction(results_folder, env_params.n_agents, show_plots, save_plots)
             plot_rodrigo_quivs(saved_results_folder, agents, show_plots, save_plots=False)
 
     # if an identical simulation has already been saved
@@ -256,6 +257,7 @@ def perform_group_rodrigo(env_params, ag_params, show_plots=True, save_plots=Tru
         # plot a histogram of the mean occupancy of distal landmark octant and proximal landmark octant for each angle condition
         if show_plots or save_plots:
             plot_rodrigo(saved_results_folder, env_params.n_agents, show_plots, save_plots)
+            plot_rodrigo_extinction(saved_results_folder, env_params.n_agents, show_plots, save_plots)
             agents = charge_agents(saved_results_folder+"/agents.p")
             plot_rodrigo_quivs(saved_results_folder, agents, show_plots, save_plots=False)
 
@@ -357,9 +359,9 @@ def run_statistical_tests_rodrigo(path, n_agents, show_plots):
         anova_rodrigo_results.append(tmp["PR(>F)"]["C(angle)"]<p and tmp2["PR(>F)"]["C(angle)"]<p)
 
         # TTESTS
-        ttest = lambda ang : stats.ttest_1samp(cluster_df[cluster_df["angle"] == ang].groupby("agent").mean()["isinoctant_proximal"],0.125).pvalue
-        ttest2 = lambda ang : stats.ttest_1samp(cluster_df[cluster_df["angle"] == ang].groupby("agent").mean()["isinoctant_distal"],0.125).pvalue
-        ttest_rodrigo_results.append(ttest(0) < p and ttest(45) < p and ttest(90) < p and ttest(135) < p and ttest(180) < p and ttest2(0) < p and ttest2(45) < p)
+        ttest = lambda ang : stats.ttest_1samp(cluster_df[cluster_df["angle"] == ang].groupby("agent").mean()["isinoctant_proximal"],0.125)
+        ttest2 = lambda ang : stats.ttest_1samp(cluster_df[cluster_df["angle"] == ang].groupby("agent").mean()["isinoctant_distal"],0.125)
+        #ttest_rodrigo_results.append(ttest(0) < p and ttest(45) < p and ttest(90) < p and ttest(135) < p and ttest(180) < p and ttest2(0) < p and ttest2(45) < p)
 
         if show_plots:
             print()
@@ -378,16 +380,16 @@ def run_statistical_tests_rodrigo(path, n_agents, show_plots):
             print("Effect of angle on distal beacon's octant occupation: ",tmp2["PR(>F)"]["C(angle)"]<p, ", F: ", tmp2["F"]["C(angle)"])
             print()
             print("TTESTS")
-            print("Proximal beacon's octant occupation different from chance: at 0° condition: ", ttest(0) < p)
-            print("Proximal beacon's octant occupation different from chance: at 45° condition: ", ttest(45) < p)
-            print("Proximal beacon's octant occupation different from chance: at 90° condition: ", ttest(90) < p)
-            print("Proximal beacon's octant occupation different from chance: at 135° condition: ", ttest(135) < p)
-            print("Proximal beacon's octant occupation different from chance: at 180° condition: ", ttest(180) < p)
-            print("Distal beacon's octant occupation different from chance: at 0° condition: ", ttest2(0) < p)
-            print("Distal beacon's octant occupation different from chance: at 45° condition: ", ttest2(45) < p)
-            print("Distal beacon's octant occupation different from chance: at 90° condition: ", ttest2(90) < p)
-            print("Distal beacon's octant occupation different from chance: at 135° condition: ", ttest2(135) < p)
-            print("Distal beacon's octant occupation different from chance: at 180° condition: ", ttest2(180) < p)
+            print("Proximal beacon's octant occupation different from chance at 0° condition: ", ttest(0).pvalue < p, ", p: ", ttest(0).pvalue, ", t: ", ttest(0).statistic)
+            print("Proximal beacon's octant occupation different from chance at 45° condition: ", ttest(45).pvalue < p, ", p: ", ttest(45).pvalue, ", t: ", ttest(45).statistic)
+            print("Proximal beacon's octant occupation different from chance at 90° condition: ", ttest(90).pvalue < p, ", p: ", ttest(45).pvalue, ", t: ", ttest(90).statistic)
+            print("Proximal beacon's octant occupation different from chance at 135° condition: ", ttest(135).pvalue < p, ", p: ", ttest(135).pvalue, ", t: ", ttest(135).statistic)
+            print("Proximal beacon's octant occupation different from chance at 180° condition: ", ttest(180).pvalue < p, ", p: ", ttest(180).pvalue, ", t: ", ttest(180).statistic)
+            print("Distal beacon's octant occupation different from chance: at 0° condition: ", ttest2(0).pvalue < p, ", p: ", ttest2(0).pvalue, ", t: ", ttest2(0).statistic)
+            print("Distal beacon's octant occupation different from chance: at 45° condition: ", ttest2(45).pvalue < p, ", p: ", ttest2(45).pvalue, ", t: ", ttest2(45).statistic)
+            print("Distal beacon's octant occupation different from chance: at 90° condition: ", ttest2(90).pvalue < p, ", p: ", ttest2(90).pvalue, ", t: ", ttest2(90).statistic)
+            print("Distal beacon's octant occupation different from chance: at 135° condition: ", ttest2(135).pvalue < p, ", p: ", ttest2(135).pvalue, ", t: ", ttest2(135).statistic)
+            print("Distal beacon's octant occupation different from chance: at 180° condition: ", ttest2(180).pvalue < p, ", p: ", ttest2(180).pvalue, ", t: ", ttest2(180).statistic)
             print()
 
         f = open(path+"/statistical_tests_results.txt",'w')
@@ -404,16 +406,16 @@ def run_statistical_tests_rodrigo(path, n_agents, show_plots):
         print("Effect of angle on distal beacon's octant occupation: ",tmp2["PR(>F)"]["C(angle)"]<p, file=f)
         print("", file=f)
         print("TTESTS", file=f)
-        print("Proximal beacon's octant occupation different from chance at 0° condition: ", ttest(0) < p, file=f)
-        print("Proximal beacon's octant occupation different from chance at 45° condition: ", ttest(45) < p, file=f)
-        print("Proximal beacon's octant occupation different from chance at 90° condition: ", ttest(90) < p, file=f)
-        print("Proximal beacon's octant occupation different from chance at 135° condition: ", ttest(135) < p, file=f)
-        print("Proximal beacon's octant occupation different from chance at 180° condition: ", ttest(180) < p, file=f)
-        print("Distal beacon's octant occupation different from chance: at 0° condition: ", ttest2(0) < p, file=f)
-        print("Distal beacon's octant occupation different from chance: at 45° condition: ", ttest2(45) < p, file=f)
-        print("Distal beacon's octant occupation different from chance: at 90° condition: ", ttest2(90) < p, file=f)
-        print("Distal beacon's octant occupation different from chance: at 135° condition: ", ttest2(135) < p, file=f)
-        print("Distal beacon's octant occupation different from chance: at 180° condition: ", ttest2(180) < p, file=f)
+        print("Proximal beacon's octant occupation different from chance at 0° condition: ", ttest(0).pvalue < p, ", p: ", ttest(0).pvalue, ", t: ", ttest(0).statistic, file=f)
+        print("Proximal beacon's octant occupation different from chance at 45° condition: ", ttest(45).pvalue < p, ", p: ", ttest(45).pvalue, ", t: ", ttest(45).statistic, file=f)
+        print("Proximal beacon's octant occupation different from chance at 90° condition: ", ttest(90).pvalue < p, ", p: ", ttest(45).pvalue, ", t: ", ttest(90).statistic, file=f)
+        print("Proximal beacon's octant occupation different from chance at 135° condition: ", ttest(135).pvalue < p, ", p: ", ttest(135).pvalue, ", t: ", ttest(135).statistic, file=f)
+        print("Proximal beacon's octant occupation different from chance at 180° condition: ", ttest(180).pvalue < p, ", p: ", ttest(180).pvalue, ", t: ", ttest(180).statistic, file=f)
+        print("Distal beacon's octant occupation different from chance: at 0° condition: ", ttest2(0).pvalue < p, ", p: ", ttest2(0).pvalue, ", t: ", ttest2(0).statistic, file=f)
+        print("Distal beacon's octant occupation different from chance: at 45° condition: ", ttest2(45).pvalue < p, ", p: ", ttest2(45).pvalue, ", t: ", ttest2(45).statistic, file=f)
+        print("Distal beacon's octant occupation different from chance: at 90° condition: ", ttest2(90).pvalue < p, ", p: ", ttest2(90).pvalue, ", t: ", ttest2(90).statistic, file=f)
+        print("Distal beacon's octant occupation different from chance: at 135° condition: ", ttest2(135).pvalue < p, ", p: ", ttest2(135).pvalue, ", t: ", ttest2(135).statistic, file=f)
+        print("Distal beacon's octant occupation different from chance: at 180° condition: ", ttest2(180).pvalue < p, ", p: ", ttest2(180).pvalue, ", t: ", ttest2(180).statistic, file=f)
         f.close()
     except:
         print("Statistical test failed (there might not be enough data)")
@@ -432,7 +434,6 @@ def run_statistical_tests_rodrigo_extinction(path, n_agents, show_plots):
     :type path: str
     """
 
-
     coords = get_coords() # associate each state of the water-maze with a cartesian coordinate
     df_analysis = pd.DataFrame()
     agents_df_lst = []
@@ -449,36 +450,13 @@ def run_statistical_tests_rodrigo_extinction(path, n_agents, show_plots):
 
 
     print("Computing proximal and distal octants mean proportion of occupation on test episodes")
-    dist0 = get_mean_occupation_octant_extinction(0, df_analysis, coords)
-    dist45 = get_mean_occupation_octant_extinction(45, df_analysis, coords)
-    dist90 = get_mean_occupation_octant_extinction(90, df_analysis, coords)
-    dist135 = get_mean_occupation_octant_extinction(135, df_analysis, coords)
+    dist0 = get_mean_occupation_octant_extinction(1, df_analysis, coords)
+    dist45 = get_mean_occupation_octant_extinction(3, df_analysis, coords)
+    dist90 = get_mean_occupation_octant_extinction(5, df_analysis, coords)
+    dist135 = get_mean_occupation_octant_extinction(7, df_analysis, coords)
+    dist180 = get_mean_occupation_octant_extinction(9, df_analysis, coords)
 
-    # dat=pd.concat([dist0, dist45], ignore_index=False)
-    # model = ols('isinoctant_proximal ~ C(angle)', data=dat).fit()
-    # print(sm.stats.anova_lm(model, typ=2))
-    # dat=pd.concat([dist45, dist90], ignore_index=False)
-    # model = ols('isinoctant_proximal ~ C(angle)', data=dat).fit()
-    # print(sm.stats.anova_lm(model, typ=2))
-    # dat=pd.concat([dist90, dist135], ignore_index=False)
-    # model = ols('isinoctant_proximal ~ C(angle)', data=dat).fit()
-    # print(sm.stats.anova_lm(model, typ=2))
-    # dat=pd.concat([dist135, dist180], ignore_index=False)
-    # model = ols('isinoctant_proximal ~ C(angle)', data=dat).fit()
-    # print(sm.stats.anova_lm(model, typ=2))
-
-    # print("Kruskal 0 vs 45, proximal: ", stats.kruskal(dist0[50:100]["isinoctant_proximal"], dist45[50:100]["isinoctant_proximal"]))
-    # print("Kruskal 45 vs 90, proximal: ", stats.kruskal(dist45[50:100]["isinoctant_proximal"], dist90[50:100]["isinoctant_proximal"]))
-    # print("Kruskal 90 vs 135, proximal: ", stats.kruskal(dist90[50:100]["isinoctant_proximal"], dist135[50:100]["isinoctant_proximal"]))
-    # print("Kruskal 135 vs 180, proximal: ", stats.kruskal(dist135[50:100]["isinoctant_proximal"], dist180[50:100]["isinoctant_proximal"]))
-    #
-    # print("Kruskal 0 vs 45, distal: ", stats.kruskal(dist0["isinoctant_distal"], dist45["isinoctant_distal"]))
-    # print("Kruskal 45 vs 90, distal: ", stats.kruskal(dist45["isinoctant_distal"], dist90["isinoctant_distal"]))
-    # print("Kruskal 90 vs 135, distal: ", stats.kruskal(dist90["isinoctant_distal"], dist135["isinoctant_distal"]))
-    # print("Kruskal 135 vs 180, distal: ", stats.kruskal(dist135["isinoctant_distal"], dist180["isinoctant_distal"]))
-
-
-    octant_occup_df = pd.concat([dist0, dist45, dist90, dist135], ignore_index=False)
+    octant_occup_df = pd.concat([dist0, dist45, dist90, dist135, dist180], ignore_index=False)
 
     helmert_rodrigo_0vs_results_p = []
     helmert_rodrigo_45vs_results_p = []
@@ -494,88 +472,21 @@ def run_statistical_tests_rodrigo_extinction(path, n_agents, show_plots):
     print("Performing statistical analyses")
     cluster_df = octant_occup_df
     cluster_df = cluster_df.reset_index()
-    # HELMERT TESTS
-    # helmert_p = lambda lst : ols("isinoctant_proximal ~ C(angle, Helmert)", data=cluster_df[cluster_df["angle"].isin(lst)]).fit()
-    # helmert_rodrigo_0vs_results_p.append(helmert_p([0,45,90,135]).f_pvalue < p)
-    # helmert_rodrigo_45vs_results_p.append(helmert_p([45,90,135]).f_pvalue < p)
-    # helmert_rodrigo_90vs_results_p.append(helmert_p([90,135]).f_pvalue < p)
-
-    # HELMERT TESTS
-    # helmert_d = lambda lst : ols("isinoctant_distal ~ C(angle, Helmert)", data=cluster_df[cluster_df["angle"].isin(lst)]).fit()
-    # helmert_rodrigo_0vs_results_d.append(helmert_d([0,45,90,135]).f_pvalue < p)
-    # helmert_rodrigo_45vs_results_d.append(helmert_d([45,90,135]).f_pvalue < p)
-    # helmert_rodrigo_90vs_results_d.append(helmert_d([90,135]).f_pvalue < p)
-
-    # ANOVA
-    # model = ols('isinoctant_proximal ~ C(angle)', data=cluster_df).fit()
-    # tmp = sm.stats.anova_lm(model, typ=2)
-    # model2 = ols('isinoctant_distal ~ C(angle)', data=cluster_df).fit()
-    # tmp2 = sm.stats.anova_lm(model2, typ=2)
-    # anova_rodrigo_results.append(tmp["PR(>F)"]["C(angle)"]<p and tmp2["PR(>F)"]["C(angle)"]<p)
-
     # TTESTS
     #ttest = lambda ang : stats.ttest_1samp(cluster_df[cluster_df["angle"] == ang].groupby("agent").mean()["isinoctant_proximal"],0.125).pvalue
-    ttest2 = lambda ang : stats.ttest_1samp(cluster_df[cluster_df["angle"] == ang].groupby("agent").mean()["isinoctant_distal"],0.125).pvalue
+    ttest2 = lambda ang : stats.ttest_1samp(cluster_df[cluster_df["angle"] == ang].groupby("agent").mean()["isinoctant_distal"],0.125)
     #ttest_rodrigo_results.append(ttest2(0) < p and ttest2(45) < p)
 
     if show_plots:
         print()
         print("Performing statistical analyses...")
-        print()
-        print("Helmert tests")
-        # print("p < 0.05 on 0° versus others (proximal beacon): ", helmert_p([0,45,90,135]).f_pvalue < p, ", F: ", helmert_p([0,45,90,135]).fvalue)
-        # print("p < 0.05 on 45° versus others (proximal beacon): ",helmert_p([45,90,135]).f_pvalue < p, ", F: ", helmert_p([45,90,135]).fvalue)
-        # print("p < 0.05 on 90° versus others (proximal beacon): ",helmert_p([90,135]).f_pvalue < p, ", F: ", helmert_p([90,135]).fvalue)
-        # print("p < 0.05 on 0° versus others (distal beacon): ",helmert_d([0,45,90,135]).f_pvalue < p, ", F: ", helmert_d([0,45,90,135]).fvalue)
-        # print("p < 0.05 on 45° versus others (distal beacon): ",helmert_d([45,90,135]).f_pvalue < p, ", F: ", helmert_d([45,90,135]).fvalue)
-        # print("p < 0.05 on 90° versus others (distal beacon): ",helmert_d([90,135]).f_pvalue < p, ", F: ", helmert_d([90,135]).fvalue)
-        print()
-        print("ANOVAS")
-        # print("Effect of angle on proximal beacon's octant occupation: ",tmp["PR(>F)"]["C(angle)"]<p, ", F: ", tmp["F"]["C(angle)"])
-        # print("Effect of angle on distal beacon's octant occupation: ",tmp2["PR(>F)"]["C(angle)"]<p, ", F: ", tmp2["F"]["C(angle)"])
-        print()
         print("TTESTS")
-        # print("Proximal beacon's octant occupation different from chance: at 0° condition: ", ttest(0) < p)
-        # print("Proximal beacon's octant occupation different from chance: at 45° condition: ", ttest(45) < p)
-        # print("Proximal beacon's octant occupation different from chance: at 90° condition: ", ttest(90) < p)
-        # print("Proximal beacon's octant occupation different from chance: at 135° condition: ", ttest(135) < p)
-        print("Distal beacon's octant occupation different from chance: at 0° condition: ", ttest2(0) < p)
-        print("Distal beacon's octant occupation different from chance: at 45° condition: ", ttest2(45) < p)
-        print("Distal beacon's octant occupation different from chance: at 90° condition: ", ttest2(90) < p)
-        print("Distal beacon's octant occupation different from chance: at 135° condition: ", ttest2(135) < p)
+        print("Distal beacon's octant occupation different from chance: at first extinction trial: ", ttest2(1).pvalue < p, ", p: ", ttest2(1).pvalue, ", t: ", ttest2(1).statistic)
+        print("Distal beacon's octant occupation different from chance: at third extinction trial: ", ttest2(3).pvalue < p, ", p: ", ttest2(3).pvalue, ", t: ", ttest2(3).statistic)
+        print("Distal beacon's octant occupation different from chance: at fifth extinction trial: ", ttest2(5).pvalue < p, ", p: ", ttest2(5).pvalue, ", t: ", ttest2(5).statistic)
+        print("Distal beacon's octant occupation different from chance: at seventh extinction trial: ", ttest2(7).pvalue < p, ", p: ", ttest2(7).pvalue, ", t: ", ttest2(7).statistic)
+        print("Distal beacon's octant occupation different from chance: at ninth extinction trial: ", ttest2(9).pvalue < p, ", p: ", ttest2(9).pvalue, ", t: ", ttest2(9).statistic)
         print()
-
-    # f = open(path+"/statistical_tests_results.txt",'w')
-    # print("Helmert tests", file=f)
-    # print("p < 0.05 on 0° versus others (proximal beacon): ", helmert_p([0,45,90,135]).f_pvalue < p, file=f)
-    # print("p < 0.05 on 45° versus others (proximal beacon): ",helmert_p([45,90,135]).f_pvalue < p, file=f)
-    # print("p < 0.05 on 90° versus others (proximal beacon): ",helmert_p([90,135]).f_pvalue < p, file=f)
-    # print("p < 0.05 on 0° versus others (distal beacon): ",helmert_d([0,45,90,135]).f_pvalue < p, file=f)
-    # print("p < 0.05 on 45° versus others (distal beacon): ",helmert_d([45,90,135]).f_pvalue < p, file=f)
-    # print("p < 0.05 on 90° versus others (distal beacon): ",helmert_d([90,135]).f_pvalue < p, file=f)
-    # print("", file=f)
-    # print("ANOVAS", file=f)
-    # print("Effect of angle on proximal beacon's octant occupation: ",tmp["PR(>F)"]["C(angle)"]<p, file=f)
-    # print("Effect of angle on distal beacon's octant occupation: ",tmp2["PR(>F)"]["C(angle)"]<p, file=f)
-    # print("", file=f)
-    # print("TTESTS", file=f)
-    # print("Proximal beacon's octant occupation different from chance at 0° condition: ", ttest(0) < p, file=f)
-    # print("Proximal beacon's octant occupation different from chance at 45° condition: ", ttest(45) < p, file=f)
-    # print("Proximal beacon's octant occupation different from chance at 90° condition: ", ttest(90) < p, file=f)
-    # print("Proximal beacon's octant occupation different from chance at 135° condition: ", ttest(135) < p, file=f)
-    # print("Distal beacon's octant occupation different from chance: at 0° condition: ", ttest2(0) < p, file=f)
-    # print("Distal beacon's octant occupation different from chance: at 45° condition: ", ttest2(45) < p, file=f)
-    # print("Distal beacon's octant occupation different from chance: at 90° condition: ", ttest2(90) < p, file=f)
-    # print("Distal beacon's octant occupation different from chance: at 135° condition: ", ttest2(135) < p, file=f)
-    # f.close()
-    # except:
-    #     print("Statistical test failed (there might not be enough data)")
-    #     print()
-    #     f = open(path+"/statistical_tests_results.txt",'w')
-    #     print("Statistical test failed (there might not be enough data)", file=f)
-    #     f.close()
-
-
 
 
 def plot_rodrigo(results_folder, n_agents, show_plots, save_plots):
@@ -663,7 +574,7 @@ def plot_rodrigo_extinction(results_folder, n_agents, show_plots, save_plots):
     fig, axs = plt.subplots(1, 2, figsize=(15,4))
 
 
-    axs[0].imshow(mpimg.imread("../images/results_rodrigo_distal.jpg"))
+    #axs[0].imshow(mpimg.imread("../images/results_rodrigo_distal.jpg"))
     axs[0].set_xticks([])
     axs[0].set_yticks([])
     axs[0].set_frame_on(False)
@@ -843,7 +754,8 @@ def get_mean_occupation_octant_extinction(angle, df_analysis, coords):
     :type coords: dict
     :return type: pandas DataFrame
     """
-    df = df_analysis[np.logical_and(df_analysis["cond"]=="extinction", df_analysis['stage'] == "second")]
+    df = df_analysis[np.logical_and(np.logical_and(df_analysis["cond"]=="extinction", df_analysis['stage'] == "second"), df_analysis["session"]==str(angle))]
+
     df['angle'] = angle
     df['isinoctant_distal'] = df.apply(lambda row: isinoctant(coords[row.state], coords[90]), axis=1)
     # try:
@@ -880,8 +792,8 @@ def get_meanin_octant(df, coords):
     mean_proximal = np.asarray(df_prox, dtype=np.float64).mean()
     yerr_proximal = df_prox.std()/ np.sqrt(df_prox.shape[0])*1.96
 
-    mean_distal -= 0.125
-    mean_proximal -= 0.125
+    mean_distal -= 0.125 # set 0 to chance level
+    mean_proximal -= 0.125 # set 0 to chance level
 
     return mean_distal, mean_proximal, yerr_distal, yerr_proximal
 
@@ -910,7 +822,7 @@ def get_meanin_octant_extinction(df, coords):
     # mean_proximal = np.asarray(df_prox, dtype=np.float64).mean()
     # yerr_proximal = df_prox.std()/ np.sqrt(df_prox.shape[0])*1.96
 
-    mean_distal -= 0.125
+    mean_distal -= 0.125 # set 0 to chance level
 
     return mean_distal, 0., yerr_distal, 0.
 

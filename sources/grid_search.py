@@ -692,7 +692,7 @@ def perform_statical_analyses_rodrigo(directory):
         # TTESTS
         ttest = lambda ang : stats.ttest_1samp(cluster_df[cluster_df["angle"] == ang].groupby("agent").mean()["isinoctant_proximal"],0.125).pvalue
         ttest2 = lambda ang : stats.ttest_1samp(cluster_df[cluster_df["angle"] == ang].groupby("agent").mean()["isinoctant_distal"],0.125).pvalue
-        ttest_rodrigo_results.append(ttest(0) < p and ttest(45) < p and ttest(90) < p and ttest(135) < p and ttest(180) < p and ttest2(0) < p and ttest2(45) < p)
+        ttest_rodrigo_results.append(ttest(0) < p and ttest(45) < p and ttest(90) < p and ttest(135) < p and ttest(180) < p and ttest2(0) < p and ttest2(45) < p and ttest2(90) > p and ttest2(135) > p and ttest2(180) > p)
 
 
     res_df["helmert_rodrigo_0vs_p"] = helmert_rodrigo_0vs_results_p
@@ -1115,12 +1115,12 @@ def plot_local(expe, df, indi, relative=True):
         eta = round(df.loc[indi]["eta_centroid"], 3)
         fig.suptitle('Awaited results for the following parameters      SRLR:'+str(srlr)+"      QLR:"+str(qlr)+"     GAMMA:"+str(gamma)+"      INV_TEMP:"+str(inv_temp)+"      ETA:"+str(eta), fontweight="bold")
 
-        axs[0,1].bar(["0°", "45°", "90°", "135°", "180°"], proximal, color='gray', edgecolor="black", )
+        axs[0,1].bar(["0°", "45°", "90°", "135°", "180°"], np.array(proximal)-0.125, color='gray', edgecolor="black", ) # set 0 to chance level
         axs[0,1].set_title("Local aggregation results")
         axs[0,1].set_ylabel("Proportion of steps searching in the B octant")
         axs[0,1].set_xlabel("Tests")
 
-        axs[1,1].bar(["0°", "45°", "90°", "135°", "180°"], distal, color='gray', edgecolor="black")
+        axs[1,1].bar(["0°", "45°", "90°", "135°", "180°"], np.array(distal)-0.125, color='gray', edgecolor="black") # set 0 to chance level
         axs[1,1].set_ylabel("Proportion of steps searching in the F octant")
         axs[1,1].set_xlabel("Tests")
 

@@ -68,8 +68,10 @@ class DolleAgent(Agent, AssociativeAgent):
 
         self.DLS = LandmarkLearningAgent(self.env, gamma=ag_params.gamma, learning_rate=ag_params.q_lr,
                                         inv_temp=ag_params.inv_temp_mf, eta=None, allo=ag_params.mf_allo)
-        #self.weights = np.zeros((240, 2)) # 80 proximal landmark neurons + 80 distal landmark neurons + 80 place-cells
-        self.weights = np.array([[0., 0.0]]*240) # Early preference of the coordination model for the MB. Set to 0. for the no intrinsic cost of MB mode
+
+        self.weights = np.array([[0., 0.0]]*240) # no intrinsic cost of MB mode
+        # self.weights = np.array([[0., 0.1]]*240) # Early preference of the coordination model for the MB. Intrinsic cost of MB mode
+
         self.last_observation = np.zeros(240) # 80 proximal landmark neurons + 80 distal landmark neurons + 80 place-cells
         self.last_decision_arbi = 0
 
@@ -114,6 +116,7 @@ class DolleAgent(Agent, AssociativeAgent):
 
                   }
 
+    # used to lower the accuracy of the hippocampus
     def blur_state(self, s):
 
         dim1 = np.array([*range(-10,12,2)])
@@ -251,21 +254,27 @@ class DolleAgent(Agent, AssociativeAgent):
         :param orientation: the current orientation of the agent
         :type orientation: int
         """
+        # self.learning was not present in early dolle_agent objects
+        try:
+            self.learning
+        except:
+            self.learning = True
+
         if self.learning:
             decision_arbi = self.last_decision_arbi
             if not self.lesion_striatum:
                 self.DLS.update(previous_state, reward, s, allo_a, ego_a, orientation)
             if not self.lesion_hippocampus:
-                s2 = self.blur_state(s)
-                s3 = self.blur_state(previous_state)
-                #s2 = s
-                #s3 = previous_state
+                s2 = self.blur_state(s) # Low accuracy HPC
+                s3 = self.blur_state(previous_state) # Low accuracy HPC
+                #s2 = s # High accuracy HPC
+                #s3 = previous_state # High accuracy HPC
 
                 if self.HPCmode == "SR" or decision_arbi == 1:
                     self.HPC.update(s3, reward, s2, allo_a, ego_a, orientation)
                 else:
-                    # set replay to True for the no intrinsic cost of MB mode
-                    self.HPC.update(s3, reward, s2, allo_a, ego_a, orientation, replay=True)
+                    self.HPC.update(s3, reward, s2, allo_a, ego_a, orientation, replay=True) # no intrinsic cost of MB mode
+                    # self.HPC.update(s3, reward, s2, allo_a, ego_a, orientation, replay=False) # intrinsic cost of MB mode
 
             features_arb = self.get_feature_rep(s) # place-cells + visual signal
 
@@ -347,8 +356,8 @@ class DolleAgent(Agent, AssociativeAgent):
         if self.lesion_hippocampus:
             Q_sr = np.array([0.,0.,0.,0.,0.,0.])
         else:
-            s2 = self.blur_state(state_idx)
-            #s2 = state_idx
+            s2 = self.blur_state(state_idx) # Low accuracy HPC
+            #s2 = state_idx # High accuracy HPC
             Q_sr = self.HPC.compute_Q(s2)
 
         # compute DLS Q
@@ -360,6 +369,7 @@ class DolleAgent(Agent, AssociativeAgent):
             visual_rep = self.DLS.get_feature_rep(state_idx)
             Q_ego = self.DLS.compute_Q(visual_rep)
         Q_allo = self.DLS.compute_Q_allo(Q_ego)
+        # used to record each landmark influence on behavior
         self.Qprox = self.DLS.weights[0:80].T @ visual_rep[0:80]
         self.Qdist = self.DLS.weights[80:160].T @ visual_rep[80:160]
         self.Qc = self.DLS.weights[0:160].T @ visual_rep[0:160]
@@ -405,7 +415,8 @@ class DolleAgent(Agent, AssociativeAgent):
         """
 
         if a == 1:
-            reward = reward - (0.) # set to 0. for the no intrinsic cost of MB mode
+            reward = reward - (0.) # no intrinsic cost of MB mode
+            # reward = reward - (0.2) # intrinsic cost of MB mode
 
         next_Q = self.weights.T @ next_f
         if self.env.is_terminal(next_state):

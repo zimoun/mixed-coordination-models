@@ -65,6 +65,13 @@ class CombinedAgent(Agent):
         self.p_sr = .9 # comprised between 0 and 1
 
     def setup(self): # is called at the beginning of each episode
+
+        # self.learning was not present in early dolle_agent objects
+        try:
+            self.learning
+        except:
+            self.learning = True
+
         if self.learning:
             self.update_p_sr()
 
@@ -265,10 +272,17 @@ class CombinedAgent(Agent):
         :param orientation: the current orientation of the agent
         :type orientation: int
         """
+        # self.learning was not present in early dolle_agent objects
+        try:
+            self.learning
+        except:
+            self.learning = True
+
         if self.learning:
             RPE = self.DLS.update(previous_state, reward, s, allo_a, ego_a, orientation)
-        if not self.lesion_hippocampus:
-            SPE = self.HPC.update(previous_state, reward, s, allo_a, ego_a, orientation)
+        if self.learning:
+            if not self.lesion_hippocampus:
+                SPE = self.HPC.update(previous_state, reward, s, allo_a, ego_a, orientation)
         if self.learning:
             # Reliability updates
             if self.env.is_terminal(s):
@@ -297,6 +311,7 @@ class CombinedAgent(Agent):
 
         # compute DLS Q
         visual_rep = self.DLS.get_feature_rep(state_idx)
+        # used to record each landmark influence on behavior
         self.Qprox = self.DLS.weights[0:80].T @ visual_rep[0:80]
         self.Qdist = self.DLS.weights[80:160].T @ visual_rep[80:160]
         self.Qc = self.DLS.weights[0:160].T @ visual_rep[0:160]

@@ -82,7 +82,8 @@ class RTDP(Agent, ModelBasedAgent, FirstOrderAgent):
         Qmax = self.Q.max(axis=1)
         # execution of a single full backup (replay/planning)
         if replay:
-            for nreplay in range(1): # set to 1 for the no intrinsic cost of MB mode
+            for nreplay in range(1): # no intrinsic cost of MB mode
+            # for nreplay in range(2): # intrinsic cost of MB mode
                 for rs in range(0,271): # ss = replay state
                     for ra in range(0,6): # ra = replay action
                         # updating of the value function using the model of the environment (reward+transition function)

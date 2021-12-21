@@ -19,7 +19,7 @@ import time
 import os
 
 
-def perform_group_rodrigo(env_params, ag_params, show_plots=True, save_plots=True, save_agents=True, directory=None, verbose=True):
+def perform_group_rodrigo(env_params, ag_params, show_plots=True, save_plots=True, save_agents=True, directory=None, verbose=True, show_quivs=True):
     """
     Run multiple simulations of the first experiment of Rodrigo 2006, a Morris water-maze derived task where a rat has
     to navigate through a circular maze filled with water, to find a submerged platform indicated by both a
@@ -193,7 +193,7 @@ def perform_group_rodrigo(env_params, ag_params, show_plots=True, save_plots=Tru
                         res['angle'] = "extinction"
 
                     elif special_trial == trial and cond == "test":
-                        agent.lesion_hippocampus = False
+                        #agent.lesion_striatum = True
                         agent.learning = True
                         agent.lesion_PFC = False
                         envi.delete_plaform()
@@ -206,7 +206,7 @@ def perform_group_rodrigo(env_params, ag_params, show_plots=True, save_plots=Tru
                         res["cond"] = "test"
                         res['angle'] = angles[ses]
                         # put platform and proximal landmark at normal again
-                        agent.lesion_hippocampus = False
+                        #agent.lesion_striatum = False
                         agent.learning = True
                         agent.lesion_PFC = False
                         envi.set_platform_state(platform_state)
@@ -250,7 +250,8 @@ def perform_group_rodrigo(env_params, ag_params, show_plots=True, save_plots=Tru
         if show_plots or save_plots:
             plot_rodrigo(results_folder, env_params.n_agents, show_plots, save_plots)
             plot_rodrigo_extinction(results_folder, env_params.n_agents, show_plots, save_plots)
-            plot_rodrigo_quivs(saved_results_folder, agents, show_plots, save_plots=False)
+            if show_quivs:
+                plot_rodrigo_quivs(saved_results_folder, agents, show_plots, save_plots=False)
 
     # if an identical simulation has already been saved
     else:
@@ -259,7 +260,8 @@ def perform_group_rodrigo(env_params, ag_params, show_plots=True, save_plots=Tru
             plot_rodrigo(saved_results_folder, env_params.n_agents, show_plots, save_plots)
             plot_rodrigo_extinction(saved_results_folder, env_params.n_agents, show_plots, save_plots)
             agents = charge_agents(saved_results_folder+"/agents.p")
-            plot_rodrigo_quivs(saved_results_folder, agents, show_plots, save_plots=False)
+            if show_quivs:
+                plot_rodrigo_quivs(saved_results_folder, agents, show_plots, save_plots=False)
 
     # delete all agents, to prevent memory error
     if 'agents' in locals():

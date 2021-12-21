@@ -289,7 +289,7 @@ def perform_group_rodrigo2b(env_params, ag_params, show_plots=True, save_plots=T
         if show_plots or save_plots:
             plot_rodrigo(results_folder, env_params.n_agents, show_plots, save_plots)
             plot_rodrigo_extinction(results_folder, env_params.n_agents, show_plots, save_plots)
-            plot_rodrigo_quivs(saved_results_folder, agents, show_plots, save_plots=False)
+            #plot_rodrigo_quivs(saved_results_folder, agents, show_plots, save_plots=False)
 
     # if an identical simulation has already been saved
     else:

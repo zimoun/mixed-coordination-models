@@ -350,7 +350,7 @@ def create_single_agent_plot(results_folder, agent, agent_df, n_agent, save_plot
     # saves quivers showing the heading-vectors of the preferred direction of the agent at each state of the maze
     # four quivers / four strategies : egocentric MF, allocentric MF, Goal-Directed, coordination model
     if str(type(agent)) != "<class 'agents.dolle_agent.DolleAgent'>" :
-        res2_mf, res2_allo, res2_sr, res2_combined_, _, _, _, _ = get_mean_preferred_dirs([agent])
+        res2_mf, res2_allo, res2_sr, res2_combined,_, _, _, _, _ = get_mean_preferred_dirs([agent])
         ax1, ax2, ax3, ax4, fig = plot_mean_arrows([agent], res2_mf, res2_allo, res2_sr, res2_combined)
     else:
         res2_mf, res2_allo, res2_sr, res2_combined, decisions_arbi = get_mean_preferred_dirs([agent])

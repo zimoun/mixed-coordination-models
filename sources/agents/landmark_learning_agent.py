@@ -43,6 +43,11 @@ class LandmarkLearningAgent(Agent, AssociativeAgent, FirstOrderAgent):
         self.weights = np.zeros((self.features.n_cells*2, self.env.nr_actions)) # weights associating each sensory neurons to action neurons
         self.last_observation = np.zeros(self.features.n_cells*2) # last visual perception
 
+        print("lr: ", self.learning_rate)
+        print("gamma: ", gamma)
+        print("beta: ", inv_temp)
+        print("eta: ", eta)
+
     def setup(self): # not used yet
         pass
 

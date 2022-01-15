@@ -583,10 +583,10 @@ def plot_rodrigo_extinction(results_folder, n_agents, show_plots, save_plots):
     axs[0].plot(aspect="auto")
 
 
-    axs[1].bar(["0°", "45°", "90°", "135°", "180°"], [dist0, dist45, dist90, dist135, dist180], yerr=[ydist0, ydist45, ydist90, ydist135, ydist180], color='gray', edgecolor="black")
+    axs[1].bar(["1", "2", "3", "4", "5"], [dist0, dist45, dist90, dist135, dist180], yerr=[ydist0, ydist45, ydist90, ydist135, ydist180], color='gray', edgecolor="black")
     axs[1].set_title("Our results")
     axs[1].set_ylabel("Proportion of time searching in the distal landmark octant")
-    axs[1].set_xlabel("Tests")
+    axs[1].set_xlabel("Extinction trial")
 
 
     if show_plots:

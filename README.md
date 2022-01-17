@@ -72,6 +72,9 @@ A full simulation of Rodrigo 2006 experiment, with 100 agents implementing Geert
 45 minutes to complete on a laptop (i5 2.30ghz), with Dolle's model, 3 hours.</br>
 The third experiment of Pearce 1998 takes roughly 2 minutes to end with Geerts model, whereas it takes 8 minutes with Dolle's
 
+
+Additional Info : for reproduction of Geerts et al, 2020 results, please open the run.ipynb notebook in the GEERTS-hippocampus-dls-modified folder and execute the first cell (or directly execute the pearce.py script from a command prompt), then check the GEERTS-hippocampus-dls-modified/results/pearce/control/figure/escape_time.jpg and GEERTS-hippocampus-dls-modified/results/pearce/lesion/figure/escape_time.jpg after the simulations are completed.
+
 ## Contributing
 Please contact thomas.misiek@etu.univ-amu.fr to report any problem or if you want to add something to the code
 

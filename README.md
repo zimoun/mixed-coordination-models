@@ -25,7 +25,8 @@ Take note that the grid-search process require thousands of datapoints (we used 
 ## Installation
 
 Install the project by cloning it on your computer or by downloading a compressed version.</br>
-Install the required packages using the requirements.txt file and the 'pip install -r requirements.txt' command
+Install the required packages using the environment.yml file and the 'conda env create -f environment.yml', followed by the 'conda activate mixedcoord' command.
+You can also install the required packages using the requirements.txt file and the 'pip install -r requirements.txt' command
 
 ## Usage
 

@@ -28,7 +28,7 @@ def perform_full_pearce():
         env_params.maze_size = 10
         env_params.n_sessions = 11
         env_params.n_trials = 4
-        env_params.n_agents = 100
+        env_params.n_agents = 20
         env_params.init_sr = "zero"
         env_params.landmark_dist = 4
         env_params.time_limit = 500

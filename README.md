@@ -44,7 +44,8 @@ of Rodrigo (2006) and third experiment of Pearce (1998).
 
 All scripts take two arguments:
  - A first mandatory parameter: the name of the directory where to store the results
- - A second optional parameter: which set of parameters to use, either 'best_geerts', 'best_dolle' or 'custom'
+ - A second optional parameter: which set of parameters to use, either 'best_geerts', 'best_dolle' or 'custom'.
+</br>
 'custom' is a random set of parameters that is intended to be modified by the user to explore new models behaviors on the task. This can be done by editing the corresponding lines in the script before execution</br>
 'best_geerts' is the set of parameters that was found to produce the most biologically plausible behavior using geerts' coordination model</br>
 'best_dolle' is the set of parameters that was found to produce the most biologically plausible behavior using dolle's' coordination model</br>

@@ -23,7 +23,7 @@ import argparse
 
 # set parameters
 gamma = .95
-n_agents = 10
+n_agents = 100
 inv_temp = 16.
 #lesion_hippocampus = False
 learning_rate = .07

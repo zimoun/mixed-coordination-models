@@ -320,7 +320,7 @@ def random_grid_search(directory, expe, n_datapoints, mf_allo, dolle, HPCmode, s
         print("Data point: ", i, "/",n_datapoints, ", estimated remaining time: ",time.strftime('%d:%H:%M:%S', time.gmtime(remaining_time)), end="\r")
 
 
-def compute_clusters_perfs(directory, size_cluster, experimental_data_pearce=None, experimental_data_rodrigo=None, relative=True, verbose=False, noPFC=False):
+def compute_clusters_perfs(directory, experimental_data_pearce=None, experimental_data_rodrigo=None, relative=True, verbose=False, noPFC=False):
     """
         Clusterizes the agents into local groups to get the group mean performances.
         This allows to dramatically reduce noise present in the raw data, where each
@@ -338,7 +338,7 @@ def compute_clusters_perfs(directory, size_cluster, experimental_data_pearce=Non
 
         :param directory: Where the processed data will be stored
         :type directory: str
-        :param size_cluster: Number of datapoints to be included in each cluster (more -> less noise but less spatial precision)
+        :param size_cluster: (removed) Number of datapoints to be included in each cluster (more -> less noise but less spatial precision)
         :type size_cluster: int
         :param experimental_data_pearce: The original data obtained in Pearce's main experiment, to compare to our simulation data, no processing on Pearce's data if set to None
         :type experimental_data_pearce: dict of {str:list}
@@ -352,6 +352,8 @@ def compute_clusters_perfs(directory, size_cluster, experimental_data_pearce=Non
         :returns: Nothing, results are stored in different files in directory
     """
     # RAW DATA RETRIEVING
+
+    size_cluster = 100 # was a parameter in a previous version
 
     if experimental_data_pearce is None and experimental_data_rodrigo is None:
         raise Exception("At least one set of experimental data must be provided")
@@ -909,6 +911,83 @@ def plot_two_perfs(directory, expe="pearce", size_plot=10, relative=True, mode="
         display(HTML(df_sorted[["srlr_centroid", "qlr_centroid", "gamma_centroid", "inv_temp_centroid", "eta_centroid", "se_cluster_pearce", "se_cluster_rodrigo_absolute", "se_cluster_product_absolute"]].head(3).to_html()))
 
     return df2
+
+def plot_pearce_perfs(directory, size_plot=10, relative=True, mode="geerts"):
+    """
+        Display the best performances (min MSE) of the model on pearce data
+
+        :param directory: The path where the grid-search logs files are stored
+        :type directory: str
+        :param size_plot: Number of bins for each axis
+        :type size_plot: int
+        :param relative: Whether the MSE is computed using absolute or relative experimental data reference
+        :type relative: boolean
+        :param mode: Whether the simulated data in directory has been generated with dolle or geerts model
+        :type mode: str
+
+        :returns: A pandas DataFrame containing all the datapoints generated during the grid-search (parameters value, MSE, ...)
+    """
+    try:
+        res_df = pd.read_csv("../saved_results/"+directory+"/mean_square_processed.csv")
+    except:
+        res_df = pd.read_csv("../results/"+directory+"/mean_square_processed.csv")
+
+    if mode == "geerts":
+        df_pearce,data1,bin12,bin11 = plot_single_perfs(res_df, size_plot, "inv_temp", "srlr", "pearce", relative)
+        _,data2,bin22,bin21 = plot_single_perfs(res_df, size_plot, "qlr", "gamma", "pearce", relative)
+
+    elif mode == "dolle":
+        df_pearce,data1,bin12,bin11 = plot_single_perfs(res_df, size_plot, "inv_temp", "eta", "pearce", relative)
+        _,data2,bin22,bin21 = plot_single_perfs(res_df, size_plot, "qlr", "gamma", "pearce", relative)
+
+    else:
+        raise Exception("Mode should be either geerts or dolle")
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5, 8))
+
+    # to retrieve matplotlib objects so each heatmap can be integrated in a subplot
+    def plot_heatmap(ax, data, bin2, bin1):
+        plot = ax.pcolor(data)
+        ax.set_yticks(range(len(data.index))[1::2])
+        ax.set_xticks(range(len(data.columns))[1::2])
+        ax.set_yticklabels([round(w[0], 2) for w in bin2][1::2])
+        ax.set_xticklabels([round(w[0], 2) for w in bin1][1::2])
+        return plot
+
+    plot1 = plot_heatmap(ax1, data1, bin12, bin11)
+    plot2 = plot_heatmap(ax2, data2, bin22, bin21)
+
+    ax1.set_xlabel('Inverse temperature')
+    ax2.set_xlabel('MF learning rate')
+    ax2.set_xlabel('Inverse temperature')
+    ax2.set_xlabel('MF learning rate')
+    ax1.set_ylabel('SR learning rate')
+    ax2.set_ylabel('Discount factor')
+
+    fig.suptitle("Lowest square error per bin, all dimensions considered")
+    plt.colorbar(plot1, ax = ax1)
+    plt.colorbar(plot2, label="square error", ax = ax2)
+
+    ax1.set_title("Pearce")
+
+    plt.show()
+
+    print("Best three sets of parameters on Pearce's data")
+    df_pearce = res_df[res_df["index"].isin(df_pearce["index"])]
+    if relative:
+        df_sorted = df_pearce.sort_values(by=["se_cluster_100_pearce_mean"], ascending=True)
+        df_sorted["se_cluster_pearce"] = df_sorted["se_cluster_100_pearce_mean"]
+        # display the three first datapoint with lowest product MSE
+        display(HTML(df_sorted[["srlr_centroid", "qlr_centroid", "gamma_centroid", "inv_temp_centroid", "eta_centroid", "se_cluster_pearce"]].head(3).to_html()))
+    else:
+        df_sorted = df_pearce.sort_values(by=["se_cluster_100_pearce_mean"], ascending=True)
+        df_sorted["se_cluster_pearce"] = df_sorted["se_cluster_100_pearce_mean"]
+        # display the three first datapoint with lowest product MSE
+        display(HTML(df_sorted[["srlr_centroid", "qlr_centroid", "gamma_centroid", "inv_temp_centroid", "eta_centroid", "se_cluster_pearce"]].head(3).to_html()))
+
+    print("Index of the best 3 sets of parameters:", list(df_sorted.index[0:3]))
+    
+    return res_df
 
 
 def plot_all_perfs(directory, size_plot=10, relative=True, mode="geerts"):

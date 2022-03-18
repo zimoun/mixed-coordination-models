@@ -139,3 +139,4 @@ sources/__pycache__
 GEERTS-hippocampus-dls-original
 GEERTS-reproduction/results/*
 sources/notebooks/Geerts model - Statistical analyses - Deprecated.ipynb
+GEERTS-reproduction/tmp.py

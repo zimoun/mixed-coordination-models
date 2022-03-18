@@ -30,7 +30,7 @@ from scipy.stats import ttest_ind
 from scipy import stats
 
 
-def random_grid_search(directory, expe, n_datapoints, mf_allo, dolle, HPCmode, srlr=None, range_srlr=None, qlr=None, range_qlr=None, eta=None, range_eta=None, gamma=None, range_gamma=None, inv_temp=None, range_inv_temp=None):
+def random_grid_search(directory, expe, n_datapoints, mf_allo, dolle, HPCmode, srlr=None, range_srlr=None, qlr=None, range_qlr=None, eta=None, range_eta=None, gamma=None, range_gamma=None, inv_temp=None, range_inv_temp=None, random=True):
     """
         Perform a random grid-search across several dimensions (parameters).
         The goal of a random grid search is to find the optimal combination of parameters.
@@ -75,6 +75,9 @@ def random_grid_search(directory, expe, n_datapoints, mf_allo, dolle, HPCmode, s
 
         :returns: Nothing, results are stored in different files in directory
     """
+
+    if not random:
+        np.random.seed(1)
 
     # uncomment to make every simulation identical
 
@@ -157,7 +160,8 @@ def random_grid_search(directory, expe, n_datapoints, mf_allo, dolle, HPCmode, s
         raise Exception("experiment must be either rodrigo or pearce")
 
     while len(res_df) < n_datapoints:
-        np.random.seed(len(res_df))
+        if not random:
+            np.random.seed(len(res_df))
 
         i = len(res_df)
 
@@ -441,7 +445,7 @@ def compute_clusters_perfs(directory, experimental_data_pearce=None, experimenta
 
             # get mean performances of real rats for trial and session conditions
             real_data = experimental_data_pearce
-            real_data = [np.array(real_data["cont1"]), np.array(real_data["hip1"]), np.array(real_data["cont4"]), np.array(real_data["hip4"])]
+            real_data = [np.array(real_data["cont1"]), np.array(real_data["hip1"]), np.array(real_data["hip4"]), np.array(real_data["cont4"]), np.array(real_data["cont1"])-np.array(real_data["hip1"]), np.array(real_data["cont1"])-np.array(real_data["hip4"]), np.array(real_data["cont1"])-np.array(real_data["cont4"]), np.array(real_data["hip1"])-np.array(real_data["hip4"]), np.array(real_data["hip1"])-np.array(real_data["cont4"]), np.array(real_data["hip4"])-np.array(real_data["cont4"])]
 
             # get mean performances of a cluster of 100 simulated agents for trial and session conditions
             cluster_mean = lambda df, name_col, indices : df.iloc[indices][name_col].apply(lambda s : get_array_from_str(s)).mean()
@@ -451,7 +455,7 @@ def compute_clusters_perfs(directory, experimental_data_pearce=None, experimenta
             simu_h1 = cluster_mean(df, "hpc1", closests_ind)
             simu_h4 = cluster_mean(df, "hpc4", closests_ind)
 
-            simu_data = [np.array(simu_c1), np.array(simu_h1), np.array(simu_c4) ,np.array(simu_h4)]
+            simu_data = [np.array(simu_c1), np.array(simu_h1), np.array(simu_h4) ,np.array(simu_c4), np.array(simu_c1)-np.array(simu_h1), np.array(simu_c1)-np.array(simu_h4),np.array(simu_c1)-np.array(simu_c4), np.array(simu_h1)-np.array(simu_h4), np.array(simu_h1)-np.array(simu_c4), np.array(simu_h4)-np.array(simu_c4)]
 
             se_pearce = get_MSLE(real_data, simu_data, relative=True)
 
@@ -505,7 +509,7 @@ def get_euclidian_distances(res_df):
     return euclidean_distances(matrix, matrix)
 
 
-def perform_statical_analyses_pearce(directory):
+def perform_statical_analyses_pearce(directory, p=0.05):
     """
         Performs a series of two-way ANOVAs to test whether the escape time variable significantly
         decreases across both sessions and trials, for different clusters of agents.
@@ -514,6 +518,8 @@ def perform_statical_analyses_pearce(directory):
 
         :param directory: The directory in which all files related to the grid-search can be found
         :type directory: str
+        :param p: p value for the statistical tests
+        :type p: int
 
         :returns: Nothing, the results are stored in a CSV file in directory
     """
@@ -551,8 +557,6 @@ def perform_statical_analyses_pearce(directory):
     # df_analysis_les["escape_time"] = df_analysis_les["escape time"]
 
     tests_results = []
-    p = 0.05
-
 
     # perform the statistical test for each cluster of agents
     print("Performing ANOVA")
@@ -565,6 +569,12 @@ def perform_statical_analyses_pearce(directory):
         df_anova_trial = df_anova_trial[np.logical_or(df_anova_trial["trial"]==0, df_anova_trial["trial"]==3)]
         df_anova_trial = df_anova_trial.pivot_table(index=['agent', 'trial'], aggfunc='mean')
         df_anova_trial = df_anova_trial[["escape time"]]
+
+        # 200 rows, 100*trial 1, 100*trial 4
+        df_anova_trial_lesion = df_tmp_les.reset_index()
+        df_anova_trial_lesion = df_anova_trial_lesion[np.logical_or(df_anova_trial_lesion["trial"]==0, df_anova_trial_lesion["trial"]==3)]
+        df_anova_trial_lesion = df_anova_trial_lesion.pivot_table(index=['agent', 'trial'], aggfunc='mean')
+        df_anova_trial_lesion = df_anova_trial_lesion[["escape time"]]
 
         # 200 rows, 100*trial 1, 100*trial 4
         df_anova_trial1 = df_tmp.reset_index()
@@ -601,6 +611,10 @@ def perform_statical_analyses_pearce(directory):
         model = ols('escape_time ~ C(trial)', data=df_anova_trial.reset_index()).fit()
         tmp = sm.stats.anova_lm(model, typ=2)
 
+        df_anova_trial_lesion["escape_time"] = df_anova_trial_lesion["escape time"]
+        model4 = ols('escape_time ~ C(trial)', data=df_anova_trial_lesion.reset_index()).fit()
+        tmp4 = sm.stats.anova_lm(model4, typ=2)
+
         # perform ANOVA (IV -> group, DV -> escape time)
         df_both_4["escape_time"] = df_both_4["escape time"]
         model2 = ols('escape_time ~ C(group) + C(group)', data=df_both_4.reset_index()).fit()
@@ -611,7 +625,7 @@ def perform_statical_analyses_pearce(directory):
         tmp3 = sm.stats.anova_lm(model3, typ=2)
         # model2 = ols('escape_time ~ C(trial)', data=df_tmp_les.reset_index()).fit()
         # tmp2 = sm.stats.anova_lm(model2, typ=2)
-        tests_results.append(tmp["PR(>F)"]["C(trial)"]<p and tmp2["PR(>F)"]["C(group)"]<p and tmp3["PR(>F)"]["C(group)"]<p)
+        tests_results.append(tmp["PR(>F)"]["C(trial)"]<p and tmp4["PR(>F)"]["C(trial)"]>p and tmp2["PR(>F)"]["C(group)"]<p and tmp3["PR(>F)"]["C(group)"]<p)
 
     res_df["anova_pearce"] = tests_results
     res_df.to_csv("../results/"+directory+"/mean_square_processed.csv", index=False)

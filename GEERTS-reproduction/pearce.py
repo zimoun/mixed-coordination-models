@@ -14,11 +14,13 @@ from matplotlib import pyplot as plt
 import matplotlib
 import pandas as pd
 import matplotlib.image as mpimg
+from statsmodels.formula.api import ols
+import statsmodels.api as sm
 
 import warnings
 warnings.filterwarnings('ignore')
 
-def launch_pearce(path, n_agents=100, lesion_hippocampus=False, plot=False):
+def launch_pearce(path, n_agents=100, lesion_hippocampus=False, plot=False, random=True):
     #
     # parser = argparse.ArgumentParser()
     # parser.add_argument('--gamma', type=float)
@@ -114,7 +116,8 @@ def launch_pearce(path, n_agents=100, lesion_hippocampus=False, plot=False):
 
     for n_agent in trange(n_agents, position=0,leave=False,desc='agents: '):
         # set random seed
-        np.random.seed(n_agent)
+        if not random:
+            np.random.seed(n_agent)
 
         # determine sequence of platform locations
         platform_sequence = determine_platform_seq(possible_platform_states)

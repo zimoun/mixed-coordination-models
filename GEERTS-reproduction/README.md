@@ -48,8 +48,8 @@ The script can take two arguments:
 
 Example calls:</br>
   'python perform_repro_pearce.py'
-  'python perform_repro_pearce.py "my_directory"'</br>
-  'python perform_repro_pearce.py' "my_directory" 100'</br>
+  'python perform_repro_pearce.py my_directory'</br>
+  'python perform_repro_pearce.py' my_directory 100'</br>
 
 A full simulation of Pearce et al.,(1998) experiment with 100 control agents and 100 HPC-lesioned agents takes 6 hours to complete on a laptop (i5 2.30ghz).</br>
 

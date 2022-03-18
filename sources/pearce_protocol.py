@@ -19,7 +19,7 @@ import time
 import os
 
 
-def perform_group_pearce(env_params, ag_params, show_plots = True, save_plots = True, save_agents=True, directory = None, verbose = True, random=True):
+def perform_group_pearce(env_params, ag_params, show_plots = True, save_plots = True, save_agents=True, directory = None, verbose = True, seed=None):
     """
     Run multiple simulations of the main experiment of Pearce 1998, a Morris water-maze derived task where a rat has
     to navigate through a circular maze filled with water, to find a submerged platform indicated by a visual landmark
@@ -47,6 +47,9 @@ def perform_group_pearce(env_params, ag_params, show_plots = True, save_plots = 
     :type verbose: boolean
     """
 
+    if seed is not None:
+        np.random.seed(seed)
+
     # create environment
     possible_platform_states, envi = get_maze_pearce(env_params.maze_size, env_params.landmark_dist, env_params.starting_states)
 
@@ -55,8 +58,7 @@ def perform_group_pearce(env_params, ag_params, show_plots = True, save_plots = 
 
     saved_results_folder = "../saved_results/"+results_folder # never erased
     results_folder = "../results/"+results_folder # erased if an identical simulation is run
-    if not random:
-        np.random.seed(1)
+
     if not os.path.isdir(saved_results_folder):
         if os.path.isdir(results_folder): # delete previous identical simulation data (as it wasn't saved)
             shutil.rmtree(results_folder)
@@ -190,7 +192,7 @@ def plot_main_pearce_perfs(results_folder, n_trials, n_agents, n_sessions, show_
     # perform ANOVA (IV -> trial, DV -> escape time)
     try:
         df_anova_trial["escape_time"] = df_anova_trial["escape time"]
-        model = ols('escape_time ~ C(trial) + C(trial)', data=df_anova_trial.reset_index().sample(8)).fit()
+        model = ols('escape_time ~ C(trial) + C(trial)', data=df_anova_trial.reset_index().sample(100)).fit()
         print()
         print("Computing ANOVA on trial...")
         print(sm.stats.anova_lm(model, typ=2))
@@ -209,7 +211,7 @@ def plot_main_pearce_perfs(results_folder, n_trials, n_agents, n_sessions, show_
     # perform ANOVA (IV -> session, DV -> escape time)
     try:
         df_anova_session["escape_time"] = df_anova_session["escape time"]
-        model = ols('escape_time ~  C(session) + C(session)', data=df_anova_session.reset_index().sample(8)).fit()
+        model = ols('escape_time ~  C(session) + C(session)', data=df_anova_session.reset_index().sample(100)).fit()
         print()
         print("Computing ANOVA on session...")
         print(sm.stats.anova_lm(model, typ=2))

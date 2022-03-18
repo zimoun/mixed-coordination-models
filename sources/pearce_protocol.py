@@ -19,7 +19,7 @@ import time
 import os
 
 
-def perform_group_pearce(env_params, ag_params, show_plots = True, save_plots = True, save_agents=True, directory = None, verbose = True):
+def perform_group_pearce(env_params, ag_params, show_plots = True, save_plots = True, save_agents=True, directory = None, verbose = True, random=True):
     """
     Run multiple simulations of the main experiment of Pearce 1998, a Morris water-maze derived task where a rat has
     to navigate through a circular maze filled with water, to find a submerged platform indicated by a visual landmark
@@ -55,7 +55,8 @@ def perform_group_pearce(env_params, ag_params, show_plots = True, save_plots = 
 
     saved_results_folder = "../saved_results/"+results_folder # never erased
     results_folder = "../results/"+results_folder # erased if an identical simulation is run
-
+    if not random:
+        np.random.seed(1)
     if not os.path.isdir(saved_results_folder):
         if os.path.isdir(results_folder): # delete previous identical simulation data (as it wasn't saved)
             shutil.rmtree(results_folder)
@@ -69,7 +70,7 @@ def perform_group_pearce(env_params, ag_params, show_plots = True, save_plots = 
         agents = []
         for n_agent in range(env_params.n_agents):
 
-            # np.random.seed(n_agent) # uncomment to make every simulation identical
+            # uncomment to make every simulation identical
 
             # determine sequence of platform locations
             platform_sequence = determine_platform_seq(envi, possible_platform_states, env_params.n_sessions)

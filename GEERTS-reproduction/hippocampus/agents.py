@@ -23,13 +23,6 @@ class CombinedAgent(object):
         self.A_beta = 1.1
         self.alpha1 = alpha1
         self.beta1 = beta1
-        print("A_alpha: ", self.A_alpha)
-        print("A_beta: ", self.A_beta)
-        print("alpha1: ", self.alpha1)
-        print("beta1: ", self.beta1)
-        print("eta: ", self.eta)
-        print("learning_rate: ", self.learning_rate)
-        print("inv_temp: ", self.inv_temp)
 
         self.lesion_striatum = lesion_dls
         self.lesion_hippocampus = lesion_hpc
@@ -455,10 +448,6 @@ class LandmarkLearningAgent(object):
 
         self.features = LandmarkCells()
         self.weights = np.zeros((self.features.n_cells, self.env.nr_actions))
-        print("lr: ", self.learning_rate)
-        print("gamma: ", gamma)
-        print("beta: ", beta)
-        print("eta: ", eta)
 
     def one_episode(self, time_limit=1000):
         self.env.reset()

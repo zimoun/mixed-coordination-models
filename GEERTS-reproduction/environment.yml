@@ -1,0 +1,14 @@
+name: geerts_reproduction
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9.9
+  - Cython==0.29.28
+  - matplotlib==3.5.1
+  - networkx==2.7.1
+  - numpy==1.22.3
+  - pandas==1.4.1
+  - scipy==1.8.0
+  - seaborn==0.9.0
+  - statsmodels==0.13.2
+  - tqdm==4.63.0

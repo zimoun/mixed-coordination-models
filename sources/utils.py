@@ -491,8 +491,11 @@ def get_MSLE(real, expected, relative):
     real_norm = []
     expected_norm = []
     try: # pearce data
-        real_norm = minmax_scale(np.array(real).flatten(), feature_range=(50,100)).reshape((4,11))
-        expected_norm = minmax_scale(np.array(expected).flatten(), feature_range=(50,100)).reshape((4,11))
+        # real_norm = minmax_scale(np.array(real).flatten(), feature_range=(50,100)).reshape((4,11))
+        # expected_norm = minmax_scale(np.array(expected).flatten(), feature_range=(50,100)).reshape((4,11))
+
+        real_norm = real
+        expected_norm = expected
         return min([sum([mean_squared_error([real_norm[cond]], [np.array(expected_norm[cond])/ratio]) for cond in range(len(real_norm))]) for ratio in ratios])
 
     except: # rodrigo data

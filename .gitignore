@@ -132,10 +132,10 @@ dmypy.json
 
 .ipynb_checkpoints
 saved_results
-results
+results/*
 sources/note
 sources/.ipynb_checkpoints
 sources/__pycache__
-GEERTS-hippocampus-dls-original
-GEERTS-hippocampus-dls-modified/results
+GEERTS-reproduction
+GEERTS-reproduction/results/*
 sources/notebooks/Geerts model - Statistical analyses - Deprecated.ipynb

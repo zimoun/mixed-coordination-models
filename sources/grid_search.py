@@ -15,6 +15,7 @@ from scipy.stats import loguniform
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
+from pathlib import Path
 import pandas as pd
 import numpy as np
 import matplotlib
@@ -75,6 +76,8 @@ def random_grid_search(directory, expe, n_datapoints, mf_allo, dolle, HPCmode, s
         :returns: Nothing, results are stored in different files in directory
     """
 
+    # uncomment to make every simulation identical
+
     # returns a random value for parameter name_param if range_param is not None, returns the value param otherwise.
     # random values are selected using a loguniform distribution to ensure that lower intervals are sampled as much as others
     def get_real(param_value, range_param, name_param):
@@ -94,6 +97,10 @@ def random_grid_search(directory, expe, n_datapoints, mf_allo, dolle, HPCmode, s
     res_df_tmp_pearce = pd.DataFrame(columns=['srlr', 'qlr', 'gamma', 'eta', 'inv_temp', "cont1", "cont4", "hpc1", "hpc4"])
     res_df_tmp_pearce_noPFC = pd.DataFrame(columns=['srlr', 'qlr', 'gamma', 'eta', 'inv_temp', "cont1", "cont4", "hpc1", "hpc4"])
     res_df_tmp_rodrigo = pd.DataFrame(columns=['srlr', 'qlr', 'gamma', 'eta', 'inv_temp', "0dist", "45dist", "90dist", "135dist", "180dist", "0prox", "45prox", "90prox", "135prox", "180prox"])
+
+    p = Path("../results/")
+    if not p.exists():
+        os.makedirs("../results")
 
     # if the files already exist (part of the whole grid-search is already completed)
     try:
@@ -150,6 +157,7 @@ def random_grid_search(directory, expe, n_datapoints, mf_allo, dolle, HPCmode, s
         raise Exception("experiment must be either rodrigo or pearce")
 
     while len(res_df) < n_datapoints:
+        np.random.seed(len(res_df))
 
         i = len(res_df)
 
@@ -317,7 +325,14 @@ def random_grid_search(directory, expe, n_datapoints, mf_allo, dolle, HPCmode, s
         cpt += 1
         remaining_time = ((end-deb)/cpt)*(n_datapoints-i)
 
-        print("Data point: ", i, "/",n_datapoints, ", estimated remaining time: ",time.strftime('%d:%H:%M:%S', time.gmtime(remaining_time)), end="\r")
+        day = remaining_time // (24 * 3600)
+        remaining_time = remaining_time % (24 * 3600)
+        hour = remaining_time // 3600
+        remaining_time %= 3600
+        minutes = remaining_time // 60
+        remaining_time %= 60
+        seconds = remaining_time
+        print("Data point: ", i, "/",n_datapoints, ", estimated remaining time: %d days, %d hours, %d minutes, %d seconds" % (day, hour, minutes, seconds), end="\r")
 
 
 def compute_clusters_perfs(directory, experimental_data_pearce=None, experimental_data_rodrigo=None, relative=True, verbose=False, noPFC=False):
@@ -426,7 +441,7 @@ def compute_clusters_perfs(directory, experimental_data_pearce=None, experimenta
 
             # get mean performances of real rats for trial and session conditions
             real_data = experimental_data_pearce
-            real_data = [real_data["cont1"], real_data["cont4"], real_data["hip1"], real_data["hip4"]]
+            real_data = [np.array(real_data["cont1"]), np.array(real_data["hip1"]), np.array(real_data["cont4"]), np.array(real_data["hip4"])]
 
             # get mean performances of a cluster of 100 simulated agents for trial and session conditions
             cluster_mean = lambda df, name_col, indices : df.iloc[indices][name_col].apply(lambda s : get_array_from_str(s)).mean()
@@ -435,7 +450,8 @@ def compute_clusters_perfs(directory, experimental_data_pearce=None, experimenta
             simu_c4 = cluster_mean(df, "cont4", closests_ind)
             simu_h1 = cluster_mean(df, "hpc1", closests_ind)
             simu_h4 = cluster_mean(df, "hpc4", closests_ind)
-            simu_data = [simu_c1, simu_c4, simu_h1, simu_h4]
+
+            simu_data = [np.array(simu_c1), np.array(simu_h1), np.array(simu_c4) ,np.array(simu_h4)]
 
             se_pearce = get_MSLE(real_data, simu_data, relative=True)
 
@@ -986,7 +1002,7 @@ def plot_pearce_perfs(directory, size_plot=10, relative=True, mode="geerts"):
         display(HTML(df_sorted[["srlr_centroid", "qlr_centroid", "gamma_centroid", "inv_temp_centroid", "eta_centroid", "se_cluster_pearce"]].head(3).to_html()))
 
     print("Index of the best 3 sets of parameters:", list(df_sorted.index[0:3]))
-    
+
     return res_df
 
 
@@ -994,7 +1010,6 @@ def plot_all_perfs(directory, size_plot=10, relative=True, mode="geerts"):
     """
         Display the best performances (min MSE) of the model on both pearce data,
         rodrigo data, and their product
-
         :param directory: The path where the grid-search logs files are stored
         :type directory: str
         :param size_plot: Number of bins for each axis
@@ -1003,7 +1018,6 @@ def plot_all_perfs(directory, size_plot=10, relative=True, mode="geerts"):
         :type relative: boolean
         :param mode: Whether the simulated data in directory has been generated with dolle or geerts model
         :type mode: str
-
         :returns: A pandas DataFrame containing all the datapoints generated during the grid-search (parameters value, MSE, ...)
     """
     try:
@@ -1111,14 +1125,12 @@ def plot_all_perfs(directory, size_plot=10, relative=True, mode="geerts"):
 def plot_local(expe, df, indi, relative=True):
     """
         Display the mean performance of a cluster of 100 agents on a specific task
-
         :param df: A DataFrame containing the data of all agents simulated during the grid-search, and which validated some statistical tests
         :type df: pandas DataFrame
         :param indi: Index of the cluster in df
         :type indi: int
         :param relative: Whether the MSE is computed using absolute or relative experimental data reference
         :type relative: boolean
-
         :returns: Nothing, but display a matplotlib object
     """
     if expe == "main_pearce":

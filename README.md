@@ -76,7 +76,7 @@ The third experiment of Pearce 1998 takes roughly 2 minutes to end with Geerts m
 
 Additional Info : for the replication of Geerts et al, 2020 results, please open the Geerts Replication.ipynb notebook in the sources/notebooks folder, it contains everything that was used to produce the data of the "A general model of hippocampal and dorsal striatal learning and decision making" paper. You can also run the perform_full_pearce.py script which will also produce the same data, but wont run the parameter optimisation algorithm. All the other notebooks are unrelated to this work.
 
-Additional Info : for the reproduction of Geerts et al, 2020 results, please open the run.ipynb notebook in the GEERTS-hippocampus-dls-modified folder and execute the first cell (or directly execute the pearce.py script from a command prompt), then check the GEERTS-hippocampus-dls-modified/results/pearce/control/figure/escape_time.jpg and GEERTS-hippocampus-dls-modified/results/pearce/lesion/figure/escape_time.jpg after the simulations are completed.
+Additional Info : for the reproduction of Geerts et al, (2020) results, please open the README.md document in the GEERTS-reproduction folder.
 
 ## Contributing
 Please contact thomas.misiek@etu.univ-amu.fr to report any problem or if you want to add something to the code

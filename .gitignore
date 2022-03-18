@@ -136,6 +136,6 @@ results/*
 sources/note
 sources/.ipynb_checkpoints
 sources/__pycache__
-GEERTS-reproduction
+GEERTS-hippocampus-dls-original
 GEERTS-reproduction/results/*
 sources/notebooks/Geerts model - Statistical analyses - Deprecated.ipynb

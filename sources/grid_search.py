@@ -611,9 +611,9 @@ def perform_statical_analyses_pearce(directory, p=0.05):
         model = ols('escape_time ~ C(trial)', data=df_anova_trial.reset_index()).fit()
         tmp = sm.stats.anova_lm(model, typ=2)
 
-        df_anova_trial_lesion["escape_time"] = df_anova_trial_lesion["escape time"]
-        model4 = ols('escape_time ~ C(trial)', data=df_anova_trial_lesion.reset_index()).fit()
-        tmp4 = sm.stats.anova_lm(model4, typ=2)
+        # df_anova_trial_lesion["escape_time"] = df_anova_trial_lesion["escape time"]
+        # model4 = ols('escape_time ~ C(trial)', data=df_anova_trial_lesion.reset_index()).fit()
+        # tmp4 = sm.stats.anova_lm(model4, typ=2)
 
         # perform ANOVA (IV -> group, DV -> escape time)
         df_both_4["escape_time"] = df_both_4["escape time"]
@@ -625,7 +625,7 @@ def perform_statical_analyses_pearce(directory, p=0.05):
         tmp3 = sm.stats.anova_lm(model3, typ=2)
         # model2 = ols('escape_time ~ C(trial)', data=df_tmp_les.reset_index()).fit()
         # tmp2 = sm.stats.anova_lm(model2, typ=2)
-        tests_results.append(tmp["PR(>F)"]["C(trial)"]<p and tmp4["PR(>F)"]["C(trial)"]>p and tmp2["PR(>F)"]["C(group)"]<p and tmp3["PR(>F)"]["C(group)"]<p)
+        tests_results.append(tmp["PR(>F)"]["C(trial)"]<p and tmp2["PR(>F)"]["C(group)"]<p and tmp3["PR(>F)"]["C(group)"]<p)
 
     res_df["anova_pearce"] = tests_results
     res_df.to_csv("../results/"+directory+"/mean_square_processed.csv", index=False)

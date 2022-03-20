@@ -470,13 +470,13 @@ def plot_pearce(env_params, ag_params, ci=None, experimental_data=None, show_plo
     if experimental_data is not None:
         # Pearce data
         real_data = experimental_data
-        real_data = [real_data["cont1"], real_data["cont4"], real_data["hip1"], real_data["hip4"]]
+        real_data = [real_data["cont1"], real_data["cont4"], real_data["hip1"], real_data["hip4"], np.array(real_data["cont1"])-np.array(real_data["hip1"]), np.array(real_data["cont1"])-np.array(real_data["hip4"]), np.array(real_data["cont1"])-np.array(real_data["cont4"]), np.array(real_data["hip1"])-np.array(real_data["hip4"]), np.array(real_data["hip1"])-np.array(real_data["cont4"]), np.array(real_data["hip4"])-np.array(real_data["cont4"])]
         # Simulation data
         control_1bis = axs[2].get_lines()[3].get_xydata()[:,1]
         control_4bis = axs[2].get_lines()[4].get_xydata()[:,1]
         hippo_1bis = axs[2].get_lines()[0].get_xydata()[:,1]
         hippo_4bis = axs[2].get_lines()[1].get_xydata()[:,1]
-        expected_data = [control_1bis, control_4bis, hippo_1bis, hippo_4bis]
+        expected_data = [control_1bis, control_4bis, hippo_1bis, hippo_4bis, np.array(control_1bis)-np.array(hippo_1bis), np.array(control_1bis)-np.array(hippo_4bis), np.array(control_1bis)-np.array(control_4bis), np.array(hippo_1bis)-np.array(hippo_4bis), np.array(hippo_1bis)-np.array(control_4bis), np.array(hippo_4bis)-np.array(control_4bis)]
         se = get_MSLE(real_data, expected_data, relative=True)
         print("Mean Square Error: ", se)
     if show_plots:

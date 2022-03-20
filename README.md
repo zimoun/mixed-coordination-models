@@ -47,7 +47,8 @@ of Rodrigo (2006) and third experiment of Pearce (1998).
 All scripts take two arguments:
  - A first mandatory parameter: the name of the directory where to store the results
  - A second optional parameter: which set of parameters to use, either 'best_geerts', 'best_dolle' or 'custom'.</br>'custom' is a random set of parameters that is intended to be modified by the user to explore new models behaviors on the task. This can be done by editing the corresponding lines in the script before execution</br>
-'best_geerts' is the set of parameters that was found to produce the most biologically plausible behavior using geerts' coordination model</br>
+'best_geerts' is the set of parameters that was found to produce the most biologically plausible behavior using geerts' coordination model and the same seed we used to produce our papers results, thus the results should be identical to ours</br>
+'best_geerts_stochastic' is the set of parameters that was found to produce the most biologically plausible behavior using geerts' coordination model and no seed, thus the results might not be exactly the same as in our article, but should be similar</br>
 'best_dolle' is the set of parameters that was found to produce the most biologically plausible behavior using dolle's' coordination model</br>
 the best set of parameters for each models were found using a random grid-search (see grid_search module)
 
@@ -60,6 +61,7 @@ Example calls:</br>
   'python perform_full_pearce.py my_directory best_geerts'</br>
   'python perform_full_pearce.py test best_dolle'</br>
   'python perform_full_pearce.py my_directory custom'</br>
+  'python perform_full_pearce.py my_directory best_geerts_stochastic'</br>
 
 The third experiment of Pearce 1998 need agents trained on the first experiment to be performed, thus it is mandatory
 to execute the first experiment of Pearce before executing the third. Example below.</br>
@@ -75,6 +77,9 @@ A full simulation of Rodrigo 2006 experiment, with 100 agents implementing Geert
 The third experiment of Pearce 1998 takes roughly 2 minutes to end with Geerts model, whereas it takes 8 minutes with Dolle's
 
 Additional Info : for the replication of Geerts et al, 2020 results, please open the Geerts Replication.ipynb notebook in the sources/notebooks folder, it contains everything that was used to produce the data of the "A general model of hippocampal and dorsal striatal learning and decision making" paper. You can also run the perform_full_pearce.py script which will also produce the same data, but wont run the parameter optimisation algorithm. All the other notebooks are unrelated to this work.
+The grid-search results can be computed in either a stochastic or deterministic way. The determinist method (using a seed) should return the exact results we used for our replication article, while the stochastic method should return similar but not identical
+results. This can be set using the parameter "random" of the random_grid_search method. The same goes for the perform_group_pearce method which can be used with either the "seed" parameter set to 1 (control) or 2 (lesioned HPC) for deterministic behavior, and
+with None value for stochastic computing.
 
 Additional Info : for the reproduction of Geerts et al, (2020) results, please open the README.md document in the GEERTS-reproduction folder.
 

@@ -38,10 +38,10 @@ def perform_full_exp3_pearce():
 
         ag_params = AgentsParams()
         ag_params.mf_allo = False
-        ag_params.hpc_lr = 0.088
-        ag_params.q_lr = 0.175
-        ag_params.inv_temp = 64
-        ag_params.gamma = 0.92
+        ag_params.hpc_lr = 0.074
+        ag_params.q_lr = 0.256
+        ag_params.inv_temp = 50
+        ag_params.gamma = 0.82
         ag_params.eta = 0.03 # reliability learning rate
         ag_params.alpha1 = 0.01
         ag_params.beta1 = 0.1

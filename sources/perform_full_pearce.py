@@ -14,15 +14,18 @@ def perform_full_pearce():
         First mandatory parameter: the name of the directory where to store the results
         Second optional parameter: which set of parameters to use, either 'best_geerts', 'best_dolle' or 'custom'
         'custom' is a random set of parameters that is intended to be modified by the user to explore new models behaviors on Pearce's task
-        'best_geerts' is the set of parameters that was found to produce the most biologically plausible behavior using geerts' coordination model
+        'best_geerts' is the set of parameters that was found to produce the most biologically plausible behavior using geerts' coordination model,
+        and the same seed we used to produce our papers results, thus the results should be identical to ours
+        'best_geerts_stochastic' is the set of parameters that was found to produce the most biologically plausible behavior using geerts' coordination model,
+        and no seed, thus the results might not be exactly the same as in our article, but should be similar
         'best_dolle' is the set of parameters that was found to produce the most biologically plausible behavior using dolle's' coordination model
         the best set of parameters for each models were found using a random grid-search (see grid_search module)
     """
 
-    if len(sys.argv) < 2 or (len(sys.argv) == 2 and (sys.argv[1] == "best_geerts" or sys.argv[1] == "best_dolle" or sys.argv[1] == "custom")):
+    if len(sys.argv) < 2 or (len(sys.argv) == 2 and (sys.argv[1] == "best_geerts" or sys.argv[1] == "best_geerts_stochastic" or sys.argv[1] == "best_dolle" or sys.argv[1] == "custom")):
         raise Exception("Directory name is mandatory")
 
-    if len(sys.argv) < 3 or sys.argv[2] == "best_geerts": # best parameters for geerts model (found using a grid-search)
+    if len(sys.argv) < 3 or sys.argv[2] == "best_geerts" or sys.argv[2] == "best_geerts_stochastic": # best parameters for geerts model (found using a grid-search)
 
         env_params = EnvironmentParams()
         env_params.maze_size = 10
@@ -36,10 +39,10 @@ def perform_full_pearce():
 
         ag_params = AgentsParams()
         ag_params.mf_allo = False
-        ag_params.hpc_lr = 0.088
-        ag_params.q_lr = 0.175
-        ag_params.inv_temp = 64
-        ag_params.gamma = 0.92
+        ag_params.hpc_lr = 0.074
+        ag_params.q_lr = 0.256
+        ag_params.inv_temp = 50
+        ag_params.gamma = 0.82
         ag_params.eta = 0.03 # reliability learning rate
         ag_params.alpha1 = 0.01
         ag_params.beta1 = 0.1
@@ -127,11 +130,17 @@ def perform_full_pearce():
 
     ag_params.lesion_HPC = False
     print("Computing control group simulations")
-    perform_group_pearce(env_params, ag_params, directory=sys.argv[1]+"/control_group", show_plots=False, save_plots=True)
+    if len(sys.argv) > 3 and sys.argv[2] == "best_geerts":
+        perform_group_pearce(env_params, ag_params, directory=sys.argv[1]+"/control_group", show_plots=False, save_plots=True, seed=1)
+    else:
+        perform_group_pearce(env_params, ag_params, directory=sys.argv[1]+"/control_group", show_plots=False, save_plots=True)
 
     ag_params.lesion_HPC = True
     print("Computing HPC-lesioned group simulations")
-    perform_group_pearce(env_params, ag_params, directory=sys.argv[1]+"/lesioned_group", show_plots=False, save_plots=True)
+    if len(sys.argv) > 3 and sys.argv[2] == "best_geerts":
+        perform_group_pearce(env_params, ag_params, directory=sys.argv[1]+"/lesioned_group", show_plots=False, save_plots=True, seed=2)
+    else:
+        perform_group_pearce(env_params, ag_params, directory=sys.argv[1]+"/lesioned_group", show_plots=False, save_plots=True)
 
     print("Saving data at "+str(sys.argv[1])+" directory                   ")
 

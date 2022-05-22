@@ -1,0 +1,4 @@
+# This is the list of the project's significant contributors.
+#
+Thomas MISIEK
+Mehdi KHAMASSI

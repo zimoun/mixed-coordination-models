@@ -1,0 +1,68 @@
+{
+    "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+    "@type": "SoftwareSourceCode",
+    "license": "https://spdx.org/licenses/MIT",
+    "codeRepository": "https://github.com/thomasMisiek/mixed-coordination-models.git",
+    "dateCreated": "2021-06-01",
+    "datePublished": "2022-01-15",
+    "dateModified": "2022-05-15",
+    "downloadUrl": "https://github.com/thomasMisiek/mixed-coordination-models/archive/refs/tags/v2.0.zip",
+    "name": "mixed-coordination-models",
+    "version": "2.0",
+    "description": "mixed-coordination-models simulates three spatial navigation tasks using two differents models of rats' spatial navigation abilities. Some parts of the code were taken from the original code of Geerts, Chersi, Stachenfeld and Burgess (2020).",
+    "applicationCategory": "Computational Neuroscience",
+    "funder": {
+        "@type": "Organization",
+        "name": "Sorbonne University"
+    },
+    "keywords": [
+        "spatial navigation",
+        "reinforcement-learning",
+        "rats",
+        "neuroscience",
+        "morris water maze",
+        "hippocampus",
+        "python",
+        "striatum"
+    ],
+    "programmingLanguage": [
+        "Python",
+        "Jupyter Notebook"
+    ],
+    "operatingSystem": [
+        "Windows",
+        "Linux"
+    ],
+    "softwareRequirements": [
+        "Python 3"
+    ],
+    "relatedLink": [
+        "https://github.com/thomasMisiek/A-general-model-of-hippocampal-and-dorsal-striatal-learning-and-decision-making"
+    ],
+    "author": [
+        {
+            "@type": "Person",
+            "@id": "http://orcid.org/0000-0002-9632-1946",
+            "givenName": "Thomas",
+            "familyName": "Misiek",
+            "email": "thomas.misiek@gmail.com",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Institute of Intelligent Systems and Robotics, Centre National de la Recherche Scientifique, UMR 7222, Sorbonne Université, Paris, France"
+            }
+        }
+    ],
+    "contributor": [
+        {
+            "@type": "Person",
+            "@id": "http://orcid.org/0000-0002-2515-1046",
+            "givenName": "Mehdi",
+            "familyName": "Khamassi",
+            "email": "mehdi.khamassi@sorbonne-unversite.fr",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Institute of Intelligent Systems and Robotics, Centre National de la Recherche Scientifique, UMR 7222, Sorbonne Université, Paris, France"
+            }
+        }
+    ]
+}

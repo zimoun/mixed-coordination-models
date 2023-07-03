@@ -27,3 +27,18 @@ jobs:
       - name: Rebuild environment for checking
         working-directory: sources
         run: guix time-machine -C channels.scm -- shell -C -m manifest.scm -- python3 --version
+      - name: Build GEERTS environment
+        working-directory: GEERTS-reproduction
+        run: guix time-machine -C channels.scm -- shell -C -m manifest.scm -- python3 --version        
+      - name: Create artifact
+        run: |
+          mkdir -p artifacts
+          cd sources
+          cp $(guix time-machine -C channels.scm -- pack -f docker --save-provenance -m manifest.scm) ../artifacts/docker-load-sources.tar.gz
+          cd ../GEERTS-reproduction
+          cp $(guix time-machine -C channels.scm -- pack -f docker --save-provenance -m manifest.scm) ../artifacts/docker-load-GEERTS.tar.gz
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: docker-images
+          path: artifacts/
